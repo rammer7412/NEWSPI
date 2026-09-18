@@ -44,3 +44,9 @@ export type DailyMissionRow = {
   hack_mission_claimed: boolean; all_complete_bonus_claimed: boolean; updated_at: string;
 };
 export type DailyReliefRow = { user_id: string; relief_date: string; earned_coins: number; updated_at: string };
+export type LongShortBetRow = {
+  id: string; user_id: string; asset_id: IssueId; direction: "LONG" | "SHORT"; stake: number;
+  entry_price: number; exit_price: number | null; payout: number | null;
+  status: "OPEN" | "WON" | "LOST" | "DRAW"; opened_at: string; expires_at: string;
+  settled_at: string | null; created_at: string;
+};

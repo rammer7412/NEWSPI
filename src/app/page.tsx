@@ -9,6 +9,7 @@ import { HappyDwi } from "@/components/HappyDwi";
 import { MarketBoard } from "@/components/MarketBoard";
 import { NewsCard } from "@/components/NewsCard";
 import { NewsRoulette } from "@/components/NewsRoulette";
+import { NewspiMark } from "@/components/NewspiMark";
 import { NewsHistory } from "@/components/NewsHistory";
 import { Portfolio } from "@/components/Portfolio";
 import { QuizPanel } from "@/components/QuizPanel";
@@ -37,7 +38,8 @@ function unavailableFor(article: NewsArticle): AnalyzedNews {
 
 export default function Home() {
   const { state, hydrated, loadingError, actionError, busy, retryLoad, secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins, refundRouletteCoins, earnHappyCoin,
-    recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack, claimMission, claimAllMissions, reset } = useUserState();
+    recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack, claimMission, claimAllMissions,
+    reset, longShort, openLongShort, settleLongShort } = useUserState();
   const [tab, setTab] = useState<Tab>("home");
   const [selectedIssue, setSelectedIssue] = useState<IssueId>("AI_TECH");
   const [rotation, setRotation] = useState(0);
@@ -162,7 +164,7 @@ export default function Home() {
       spinLock.current = false;
       await Promise.resolve(refundRouletteCoins()).catch(() => undefined);
       setNewsError(true);
-      setNotice("뉴스를 불러오지 못해 사용한 10 C를 돌려드렸습니다. 다시 시도해 주세요.");
+      setNotice(`뉴스를 불러오지 못해 사용한 ${ROULETTE_COST} C를 돌려드렸습니다. 다시 시도해 주세요.`);
     }
   }
 
@@ -198,7 +200,7 @@ export default function Home() {
       {actionError && <div className="status-banner" role="alert"><ShieldCheck size={16} /><span>{actionError}</span></div>}
       {!isSupabaseConfigured && <div className="status-banner" role="status"><ShieldCheck size={16} /><span>Supabase가 설정되지 않아 Local Demo Mode로 실행 중입니다.</span></div>}
       {tab === "home" && <>
-        <section className="hero"><div className="hero-copy"><span className="hero-overline"><span className="live-dot" /> THE NEWS GAME BEGINS</span><h1>뉴스를 뽑고,<br /><span>읽고, 투자하라<span className="title-dot">.</span></span></h1><p>읽으면 벌고, 알면 오른다.<br />오늘의 뉴스를 게임처럼 경험해 보세요.</p><div className="hero-proof"><span><BookOpen size={15} /> 7개 뉴스 분야</span><span><CircleHelp size={15} /> 지식 퀴즈</span><span><Coins size={15} /> 가상 코인</span></div></div><div className="hero-decor" aria-hidden="true"><div className="decor-ring ring-one" /><div className="decor-ring ring-two" /><span className="decor-symbol">N<span>.</span></span><span className="decor-star star-one">✦</span><span className="decor-star star-two">✦</span></div></section>
+        <section className="hero"><div className="hero-copy"><span className="hero-overline"><span className="live-dot" /> THE NEWS GAME BEGINS</span><h1>뉴스를 뽑고,<br /><span>읽고, 투자하라<span className="title-dot">.</span></span></h1><p>읽으면 벌고, 알면 오른다.<br />오늘의 뉴스를 게임처럼 경험해 보세요.</p><div className="hero-proof"><span><BookOpen size={15} /> 7개 뉴스 분야</span><span><CircleHelp size={15} /> 지식 퀴즈</span><span><Coins size={15} /> 가상 코인</span></div></div><div className="hero-decor" aria-hidden="true"><div className="decor-ring ring-one" /><div className="decor-ring ring-two" /><span className="decor-symbol"><NewspiMark /></span><span className="decor-star star-one">✦</span><span className="decor-star star-two">✦</span></div></section>
         {notice && <div className="status-banner" role="status"><ShieldCheck size={16} /><span>{notice}</span><button onClick={() => setNotice(null)} aria-label="알림 닫기">×</button></div>}
         <div className="home-grid"><NewsRoulette rotation={rotation} spinning={spinning} selectedCategory={selectedCategory} onSpin={spin} disabled={!hydrated || busy} canAfford={state.coins >= ROULETTE_COST} onOpenHappy={() => setTab("happy")} cost={ROULETTE_COST} /><div className="home-right">
           {spinning ? <div className="placeholder-card glass-panel loading-card"><span className="tag purple-tag"><LoaderCircle size={13} className="animate-spin" /> NEWS FEED</span><div className="placeholder-orb"><LoaderCircle size={36} className="animate-spin" /></div><h2>뉴스 불러오는 중...</h2><p>선택된 분야의 최신 뉴스를 찾고 있습니다.</p><div className="skeleton-bars"><i /><i /><i /></div></div>
@@ -211,7 +213,7 @@ export default function Home() {
         </div></div>
         <section className="market-preview"><div className="preview-heading"><div><span className="section-kicker">MARKET SNAPSHOT</span><h2>지금의 이슈 지수</h2></div><button onClick={() => goToMarket()} className="text-button">거래소 전체 보기 <ArrowRight size={16} /></button></div><div className="preview-grid">{market.slice(0, 3).map((issue) => { const meta = ISSUE_BY_ID[issue.id]; const rate = changePercent(issue); return <button className="preview-card glass-panel" key={issue.id} onClick={() => goToMarket(issue.id)}><span className="preview-icon" style={{ color: meta.color, background: `${meta.color}17` }}>{meta.symbol}</span><span className="preview-name">{issue.name}</span><strong>{formatCoin(issue.currentPrice)}</strong><small className={rate >= 0 ? "positive" : "negative"}>{formatPercent(rate)} <ArrowUpRight size={13} /></small></button>; })}</div></section>
       </>}
-      {tab === "market" && <MarketBoard market={market} state={state} selectedId={selectedIssue} onSelect={setSelectedIssue} onBuy={buy} onSell={sell} secondsToNextTick={secondsToNextTick} busy={busy} />}
+      {tab === "market" && <MarketBoard market={market} state={state} selectedId={selectedIssue} onSelect={setSelectedIssue} onBuy={buy} onSell={sell} secondsToNextTick={secondsToNextTick} busy={busy} longShort={longShort} onOpenLongShort={openLongShort} onSettleLongShort={settleLongShort} />}
       {tab === "portfolio" && <Portfolio state={state} market={market} onMarket={() => goToMarket()} />}
       {tab === "history" && <NewsHistory state={state} />}
       {tab === "missions" && <DailyMissions state={state} onClaim={claimMission} onClaimAll={claimAllMissions} busy={busy} />}

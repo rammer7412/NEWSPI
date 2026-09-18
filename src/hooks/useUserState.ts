@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { advanceMarketTicks } from "@/lib/market";
 import { initialUserState, loadUserState, saveUserState } from "@/lib/storage";
-import { applyArticleImpactOnce, applyHappyReward, applyQuizAward, applyWrongQuizAnswer, claimAllMissionReward, claimMissionReward, finalizeHackOnce, HAPPY_DAILY_LIMIT, recordArticleView, registerAnalyzedArticle, rolloverDailyState } from "@/lib/game";
+import { applyArticleImpactOnce, applyHappyReward, applyQuizAward, applyWrongQuizAnswer, claimAllMissionReward, claimMissionReward, finalizeHackOnce, recordArticleView, registerAnalyzedArticle, rolloverDailyState } from "@/lib/game";
 import { HAPPY_PHRASES, normalizeHappyPhrase } from "@/data/happy-phrases";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { useDbUserState } from "@/hooks/useDbUserState";
-import type { AnalyzedNews, IssueId, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
+import type { AnalyzedNews, IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
 
 type TradeResult = { ok: boolean; message: string };
-export const ROULETTE_COST = 10;
+export const ROULETTE_COST = 20;
 
 export function useLocalUserState() {
   const [state, setState] = useState<UserState>(initialUserState);
@@ -92,12 +92,6 @@ export function useLocalUserState() {
 
   const earnHappyCoin = useCallback((typedText: string): TradeResult => {
     commit((previous) => previous);
-    if (stateRef.current.coins >= ROULETTE_COST) {
-      return { ok: false, message: "행복한 뒤주는 파산 위기에 처한 백성에게만 열립니다." };
-    }
-    if (stateRef.current.happyDailyEarned >= HAPPY_DAILY_LIMIT) {
-      return { ok: false, message: "오늘의 뒤주 보상 10 C를 모두 받았습니다. 내일 다시 이용해 주세요." };
-    }
     const phrase = HAPPY_PHRASES[stateRef.current.happyTypingCount % HAPPY_PHRASES.length];
     if (normalizeHappyPhrase(typedText) !== normalizeHappyPhrase(phrase)) {
       return { ok: false, message: "문장을 다시 확인해 주세요. 마침표까지 따라 적으면 1 C를 받을 수 있어요." };
@@ -187,6 +181,14 @@ export function useLocalUserState() {
       prediction: stateRef.current.hackEvents[articleId].prediction };
   }, [commit, syncMarket]);
 
+  const longShort: LongShortSnapshot = { active: null, recent: [] };
+  const openLongShort = useCallback(async (_assetId: IssueId, _direction: LongShortDirection,
+    _stakeChoice: "10" | "25" | "50" | "MAX"): Promise<TradeResult> => {
+    void _assetId; void _direction; void _stakeChoice;
+    return { ok: false, message: "롱·숏 배틀은 Supabase 연결 후 이용할 수 있습니다." };
+  }, []);
+  const settleLongShort = useCallback(async (): Promise<LongShortBet | null> => null, []);
+
   const claimMission = useCallback((id: MissionId) => {
     const before = stateRef.current.coins;
     commit((previous) => claimMissionReward(previous, id));
@@ -204,7 +206,7 @@ export function useLocalUserState() {
   return { state, hydrated, loadingError: null, actionError: null, busy: false, retryLoad: () => {},
     secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins,
     refundRouletteCoins, earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack,
-    claimMission, claimAllMissions, reset };
+    claimMission, claimAllMissions, reset, longShort, openLongShort, settleLongShort };
 }
 
 // The mode is fixed at build time. A configured deployment never persists game

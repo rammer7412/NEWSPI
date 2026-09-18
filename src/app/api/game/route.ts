@@ -18,8 +18,13 @@ async function execute(action: string, payload: Record<string, unknown>) {
       try { payload = { state: validateLegacyState(payload.state) }; }
       catch (error) { return NextResponse.json({ message: error instanceof Error ? error.message : "기존 데이터를 확인할 수 없습니다." }, { status: 400, headers: noStore }); }
     }
-    const { data, error } = await supabase.rpc("newspi_game_action", { p_action: action, p_payload: payload });
-    if (error || !data) return NextResponse.json({ message: "게임 데이터를 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요." }, { status: 503, headers: noStore });
+    let { data, error } = await supabase.rpc("newspi_game_dispatch", { p_action: action, p_payload: payload });
+    // Keep the existing game usable until the long/short SQL migration is applied.
+    // The old RPC is only used when PostgREST confirms the new function is absent.
+    if (error?.code === "PGRST202") {
+      ({ data, error } = await supabase.rpc("newspi_game_action", { p_action: action, p_payload: payload }));
+    }
+    if (error || !data) return NextResponse.json({ message: "게임 데이터를 저장하지 못했습니다. Supabase 연결과 SQL 마이그레이션을 확인해 주세요." }, { status: 503, headers: noStore });
     return NextResponse.json(data, { headers: noStore });
   } catch {
     return NextResponse.json({ message: "게임 서버에 연결하지 못했습니다. 다시 시도해 주세요." }, { status: 503, headers: noStore });

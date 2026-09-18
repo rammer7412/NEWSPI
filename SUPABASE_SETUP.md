@@ -15,15 +15,18 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
 5. Supabase SQL Editor에서 [`supabase/migrations/20260918000000_newspi_game_state.sql`](supabase/migrations/20260918000000_newspi_game_state.sql)을 실행합니다. Supabase CLI가 프로젝트에 연결되어 있다면 `supabase db push`로 적용할 수도 있습니다. 기존 원격 데이터를 초기화하거나 삭제하는 명령은 사용하지 마세요.
-6. `npm install`로 Supabase SSR 패키지를 설치하고 lockfile을 갱신한 뒤 개발 서버를 다시 시작합니다.
+6. 이어서 [`supabase/migrations/20260919000000_newspi_long_short.sql`](supabase/migrations/20260919000000_newspi_long_short.sql)을 SQL Editor에서 실행합니다. CLI가 연결돼 있다면 두 파일을 순서대로 `supabase db push`로 적용할 수 있습니다.
+7. `npm install`로 Supabase SSR 패키지를 설치하고 lockfile을 갱신한 뒤 개발 서버를 다시 시작합니다.
 
 마이그레이션은 `market_assets`의 7개 이슈와 뒤주 문장 데이터를 추가하고 사용자 테이블, RLS, 원자적 게임 액션 RPC를 만듭니다. 기존 프로젝트가 연결돼 있지 않다면 파일만 준비된 상태입니다.
+
+롱·숏 마이그레이션은 `long_short_bets`와 사용자별 조회 정책을 추가합니다. `GET /api/long-short`는 진행 중 베팅을 복구하고 만료된 베팅을 정산하며, `POST /api/long-short`는 서버 가격과 시간으로 새 베팅을 엽니다. SQL을 적용한 뒤 개발 서버를 재시작하고 거래소에서 확인하세요. Supabase가 없는 Local Demo Mode에서는 롱·숏 배틀을 사용할 수 없습니다.
 
 ## 2. 저장 구조와 보안 확인
 
 `profiles.game_state`가 게임 상태의 기준입니다. 같은 DB 트랜잭션에서 `user_market_states`, `positions`, `news_history`, `article_progress`, `daily_missions`, `daily_relief_progress`에 조회용 데이터가 반영되고 `trades`에 거래 기록이 추가됩니다. `roulette_spins`는 비용 차감과 환불의 중복을 막습니다.
 
-모든 사용자 테이블에는 RLS가 켜져 있고 자신의 `auth.uid()`와 일치하는 행만 읽을 수 있습니다. 클라이언트의 직접 쓰기 권한은 없으며 `newspi_game_action` RPC가 사용자 행을 잠근 뒤 잔액, 보유 수량, 퀴즈·베팅·미션 중복 여부, 서버의 **Asia/Seoul** 날짜를 확인합니다. `market_assets`와 `happy_phrases`는 읽기 전용 공통 데이터입니다.
+모든 사용자 테이블에는 RLS가 켜져 있고 자신의 `auth.uid()`와 일치하는 행만 읽을 수 있습니다. 클라이언트의 직접 쓰기 권한은 없으며 기존 게임 액션은 `newspi_game_dispatch`를 거쳐 사용자 행을 잠급니다. 롱·숏 베팅은 `newspi_long_short_action`이 같은 잠금을 사용해 시작과 정산을 한 번만 처리합니다. `market_assets`와 `happy_phrases`는 읽기 전용 공통 데이터입니다.
 
 SQL Editor에서 RLS를 확인할 수 있습니다.
 
@@ -32,7 +35,8 @@ select schemaname, tablename, rowsecurity
 from pg_tables
 where schemaname = 'public'
   and tablename in ('profiles','user_market_states','positions','trades',
-    'news_history','article_progress','roulette_spins','daily_missions','daily_relief_progress');
+    'news_history','article_progress','roulette_spins','daily_missions','daily_relief_progress',
+    'long_short_bets');
 ```
 
 모든 `rowsecurity` 값이 `true`여야 합니다. 다른 익명 사용자의 행에 접근하는 테스트에는 서로 다른 브라우저 프로필의 세션을 사용하세요.

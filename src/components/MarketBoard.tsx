@@ -2,10 +2,12 @@
 
 import { ArrowDownRight, ArrowUpRight, Coins, Minus, Plus, Timer, TrendingUp } from "lucide-react";
 import { useRef, useState } from "react";
+import { LongShortBattle } from "@/components/LongShortBattle";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ISSUE_BY_ID } from "@/data/market-issues";
 import { formatCoin, formatCountdown, formatNumber, formatPercent } from "@/lib/format";
 import { changePercent } from "@/lib/market";
-import type { IssueId, MarketIssue, UserState } from "@/types";
+import type { IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketIssue, UserState } from "@/types";
 
 function Sparkline({ values, color, id, large = false }: { values: number[]; color: string; id: string; large?: boolean }) {
   const recent = values.slice(large ? -18 : -9);
@@ -29,9 +31,13 @@ type Props = {
   onSell: (id: IssueId, quantity: number) => { ok: boolean; message: string } | Promise<{ ok: boolean; message: string }>;
   secondsToNextTick: number;
   busy?: boolean;
+  longShort: LongShortSnapshot;
+  onOpenLongShort: (id: IssueId, direction: LongShortDirection, stake: "10" | "25" | "50" | "MAX") => Promise<{ ok: boolean; message: string }>;
+  onSettleLongShort: () => Promise<LongShortBet | null>;
 };
 
-export function MarketBoard({ market, state, selectedId, onSelect, onBuy, onSell, secondsToNextTick, busy = false }: Props) {
+export function MarketBoard({ market, state, selectedId, onSelect, onBuy, onSell, secondsToNextTick,
+  busy = false, longShort, onOpenLongShort, onSettleLongShort }: Props) {
   const [quantity, setQuantity] = useState("1");
   const [feedback, setFeedback] = useState<{ id: IssueId; ok: boolean; message: string } | null>(null);
   const tradeLocked = useRef(false);
@@ -70,6 +76,9 @@ export function MarketBoard({ market, state, selectedId, onSelect, onBuy, onSell
         <div className="trade-card glass-panel"><div className="trade-title"><div><span className="section-kicker">TRADE THIS ISSUE</span><h3>가상 이슈 거래</h3></div><span className="coin-mini"><Coins size={15} /> {formatCoin(state.coins)}</span></div><div className="trade-stats"><div><span>보유 수량</span><strong>{formatNumber(holding.quantity)}주</strong></div><div><span>평균 매수가</span><strong>{formatCoin(holding.averagePrice)}</strong></div><div><span>평가 금액</span><strong>{formatCoin(evaluation)}</strong></div><div><span>평가 손익</span><strong className={pnl >= 0 ? "positive" : "negative"}>{pnl >= 0 ? "+" : ""}{formatCoin(pnl)} <small>({formatPercent(returnPercent)})</small></strong></div></div><label htmlFor="trade-quantity" className="quantity-label">거래 수량 <span>정수 단위로 입력</span></label><div className="quantity-input"><button aria-label="수량 줄이기" onClick={() => setQuantity(String(Math.max(1, Number(quantity || 1) - 1)))}><Minus size={16} /></button><input id="trade-quantity" type="number" min="1" step="1" inputMode="numeric" value={quantity} onChange={(event) => setQuantity(event.target.value)} /><button aria-label="수량 늘리기" onClick={() => setQuantity(String(Math.max(0, Number(quantity || 0)) + 1))}><Plus size={16} /></button></div><div className="trade-buttons"><button className="buy-button" disabled={busy} onClick={() => trade("buy")}>매수 <ArrowUpRight size={16} /></button><button className="sell-button" disabled={busy} onClick={() => trade("sell")}>매도 <ArrowDownRight size={16} /></button></div>{feedback?.id === issue.id && <p className={`trade-message ${feedback.ok ? "good" : "bad"}`} role="status">{feedback.message}</p>}</div>
       </div>
     </div>
+    <LongShortBattle market={market} selectedId={selectedId} onSelect={onSelect} coins={state.coins}
+      snapshot={longShort} onOpen={onOpenLongShort} onSettle={onSettleLongShort}
+      busy={busy} enabled={isSupabaseConfigured} />
     <p className="market-disclaimer">모든 코인과 가격은 게임용 가상 데이터입니다. 실제 금융상품이나 투자 조언이 아닙니다.</p>
   </div>;
 }

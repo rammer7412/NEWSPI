@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight, Coins, Dices, Heart, LoaderCircle } from "lucide-react";
+import { NewspiMark } from "@/components/NewspiMark";
 import { CATEGORY_LABELS, NEWS_CATEGORIES, type NewsCategory } from "@/types";
 
 type Props = {
@@ -28,7 +29,7 @@ export function NewsRoulette({ rotation, spinning, selectedCategory, onSpin, dis
             const angle = (index + 0.5) * sector * Math.PI / 180;
             return <span key={category} className="wheel-label" style={{ left: `${50 + 35 * Math.sin(angle)}%`, top: `${50 - 35 * Math.cos(angle)}%` }}>{CATEGORY_LABELS[category]}</span>;
           })}
-          <div className="wheel-center"><span>N</span><small>NEWSPI</small></div>
+          <div className="wheel-center"><NewspiMark /><small>NEWSPI</small></div>
         </div>
       </div>
       <div className="roulette-bottom">

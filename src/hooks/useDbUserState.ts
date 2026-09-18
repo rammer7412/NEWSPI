@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { clearLegacyState, readLegacyState } from "@/lib/db/legacy-migration";
 import { initialUserState } from "@/lib/storage";
-import type { AnalyzedNews, HackEventState, IssueId, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
+import type { AnalyzedNews, HackEventState, IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
 
 type GameResponse = {
   ok: boolean;
@@ -12,14 +12,19 @@ type GameResponse = {
   state: UserState;
   applied?: boolean;
   migrationCompleted?: boolean;
+  longShort?: LongShortSnapshot;
+  settledBet?: LongShortBet | null;
+  serverNow?: number;
 };
 type TradeResult = { ok: boolean; message: string };
 
 async function requestGame(action: string, payload: Record<string, unknown> = {}): Promise<GameResponse> {
-  const response = await fetch("/api/game", {
-    method: action === "bootstrap" ? "GET" : "POST",
-    headers: action === "bootstrap" ? undefined : { "Content-Type": "application/json" },
-    body: action === "bootstrap" ? undefined : JSON.stringify({ action, payload }),
+  const longShort = action === "ls_open" || action === "ls_settle";
+  const get = action === "bootstrap" || action === "ls_settle";
+  const response = await fetch(longShort ? "/api/long-short" : "/api/game", {
+    method: get ? "GET" : "POST",
+    headers: get ? undefined : { "Content-Type": "application/json" },
+    body: get ? undefined : JSON.stringify(longShort ? payload : { action, payload }),
     cache: "no-store",
   });
   const data = await response.json().catch(() => null) as GameResponse | { message?: string } | null;
@@ -53,6 +58,8 @@ export function useDbUserState() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [secondsToNextTick, setSecondsToNextTick] = useState(60);
+  const [longShort, setLongShort] = useState<LongShortSnapshot>({ active: null, recent: [] });
+  const longShortRef = useRef(longShort);
   const [retry, setRetry] = useState(0);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const pendingCount = useRef(0);
@@ -72,6 +79,11 @@ export function useDbUserState() {
       try {
         const result = await requestGame(action, payload);
         install(result.state);
+        if (result.longShort) {
+          const snapshot = { ...result.longShort, settledBet: result.settledBet, serverNow: result.serverNow, receivedAt: Date.now() };
+          longShortRef.current = snapshot;
+          setLongShort(snapshot);
+        }
         if (!result.ok) setActionError(result.message || "요청을 처리하지 못했습니다.");
         else if (action !== "tick" && action !== "bootstrap") setActionError(null);
         return result;
@@ -104,8 +116,14 @@ export function useDbUserState() {
             setActionError("서버에 진행 기록이 있어 기존 브라우저 기록을 덮어쓰지 않았습니다. 로컬 데이터는 보관했습니다.");
           }
         }
+        const betResult = await requestGame("ls_settle").catch(() => null);
         if (!cancelled) {
-          install(result.state);
+          install(betResult?.state ?? result.state);
+          if (betResult?.longShort) {
+            const snapshot = { ...betResult.longShort, settledBet: betResult.settledBet, serverNow: betResult.serverNow, receivedAt: Date.now() };
+            longShortRef.current = snapshot;
+            setLongShort(snapshot);
+          }
           setHydrated(true);
           setLoadingError(null);
         }
@@ -132,7 +150,9 @@ export function useDbUserState() {
     const timer = window.setInterval(() => { void syncMarket(); }, 1000);
     const refresh = () => {
       if (document.visibilityState !== "visible") return;
-      void run("bootstrap").then(() => syncMarket()).catch(() => undefined);
+      void run("ls_settle").then(() => syncMarket()).catch(() => {
+        void run("bootstrap").catch(() => undefined);
+      });
     };
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("focus", refresh);
@@ -215,6 +235,22 @@ export function useDbUserState() {
       prediction: result.state.hackEvents[articleId]?.prediction };
   }, [run]);
 
+  const openLongShort = useCallback(async (assetId: IssueId, direction: LongShortDirection,
+    stakeChoice: "10" | "25" | "50" | "MAX"): Promise<TradeResult> => {
+    const result = await run("ls_open", { assetId, direction, stakeChoice, requestId: crypto.randomUUID() });
+    return { ok: result.ok && !!result.applied && !!result.longShort?.active,
+      message: result.message || (result.ok ? "60초 예측을 시작했습니다." : "베팅을 시작하지 못했습니다.") };
+  }, [run]);
+
+  // Settles the current bet on the server once it is due; returns the settled
+  // bet so the UI can show the result modal, or null when nothing settled yet.
+  const settleLongShort = useCallback(async (): Promise<LongShortBet | null> => {
+    const activeId = longShortRef.current.active?.id ?? null;
+    const result = await run("ls_settle");
+    return result.settledBet ?? (activeId && result.longShort
+      ? result.longShort.recent.find((bet) => bet.id === activeId) ?? null : null);
+  }, [run]);
+
   const claimMission = useCallback(async (id: MissionId) => {
     const result = await run("claim_mission", { missionId: id });
     return result.ok && !!result.applied;
@@ -234,5 +270,5 @@ export function useDbUserState() {
   return { state, hydrated, loadingError, actionError, busy, retryLoad: () => setRetry((value) => value + 1),
     secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins, refundRouletteCoins,
     earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack, claimMission,
-    claimAllMissions, reset };
+    claimAllMissions, reset, longShort, openLongShort, settleLongShort };
 }

@@ -1,13 +1,25 @@
 import { applyIssueImpact } from "@/lib/market";
-import { ISSUE_IDS, MISSION_IDS, type AnalyzedNews, type DailyMissionState, type IssueId, type MarketDirection, type MarketImpact, type MissionId, type NewsActivity, type NewsArticle, type Prediction, type UserState } from "@/types";
+import { ISSUE_IDS, MISSION_IDS, type AnalyzedNews, type DailyMissionState, type IssueId, type LongShortDirection, type LongShortStatus, type MarketDirection, type MarketImpact, type MissionId, type NewsActivity, type NewsArticle, type Prediction, type UserState } from "@/types";
 
 export const HACK_EVENT_CHANCE = 0.2;
-export const INITIAL_COINS = 100;
+export const INITIAL_COINS = 50;
 export const FIRST_TRY_QUIZ_REWARD = 25;
 export const RETRY_QUIZ_REWARD = 10;
-export const HAPPY_DAILY_LIMIT = 10;
 export const MISSION_REWARD = 20;
 export const BET_AMOUNTS = [10, 20, 30] as const;
+export const LONG_SHORT_ROUND_MS = 60_000;
+export const LONG_SHORT_PAYOUT_RATE = 1.8;
+export const LONG_SHORT_MIN_STAKE = 10;
+export const LONG_SHORT_STAKES = [10, 25, 50] as const;
+
+// The same settlement math runs in the Supabase RPC; the local demo hook and
+// tests share this version. Wins pay floor(stake * 1.8) including the stake.
+export function settleLongShortBet(direction: LongShortDirection, stake: number, entryPrice: number,
+  exitPrice: number): { status: Exclude<LongShortStatus, "OPEN">; payout: number } {
+  if (exitPrice === entryPrice) return { status: "DRAW", payout: stake };
+  const won = exitPrice > entryPrice ? direction === "LONG" : direction === "SHORT";
+  return won ? { status: "WON", payout: Math.floor(stake * LONG_SHORT_PAYOUT_RATE) } : { status: "LOST", payout: 0 };
+}
 
 export function localDateKey(now = Date.now()): string {
   const date = new Date(now);
@@ -62,12 +74,7 @@ export function registerAnalyzedArticle(state: UserState, articleId: string, ana
   };
 }
 
-export function canEarnHappyCoin(state: UserState): boolean {
-  return state.coins < 10 && state.happyDailyEarned < HAPPY_DAILY_LIMIT;
-}
-
 export function applyHappyReward(state: UserState): UserState {
-  if (!canEarnHappyCoin(state)) return state;
   return {
     ...state,
     coins: Math.round((state.coins + 1) * 100) / 100,

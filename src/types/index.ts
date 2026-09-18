@@ -86,6 +86,22 @@ export type NewsActivity = {
   prediction?: Prediction;
 };
 export type HackEventState = { active: boolean; resolved: boolean; prediction?: Prediction; pendingAnalysis?: AnalyzedNews };
+export type LongShortDirection = "LONG" | "SHORT";
+export type LongShortStatus = "OPEN" | "WON" | "LOST" | "DRAW";
+export type LongShortBet = {
+  id: string;
+  assetId: IssueId;
+  direction: LongShortDirection;
+  stake: number;
+  entryPrice: number;
+  exitPrice: number | null;
+  payout: number | null;
+  status: LongShortStatus;
+  openedAt: number;
+  expiresAt: number;
+  settledAt: number | null;
+};
+export type LongShortSnapshot = { active: LongShortBet | null; recent: LongShortBet[]; settledBet?: LongShortBet | null; serverNow?: number; receivedAt?: number };
 export const MISSION_IDS = ["explorer", "streak", "hacker"] as const;
 export type MissionId = (typeof MISSION_IDS)[number];
 export type DailyMissionState = {

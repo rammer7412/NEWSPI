@@ -209,7 +209,7 @@ export function normalizeUserState(value: unknown, rollover = true): UserState {
     coins: legacyFreshBalance ? INITIAL_COINS : Math.round(safeNonNegative(data.coins, INITIAL_COINS) * 100) / 100,
     happyTypingCount: safeNonNegative(data.happyTypingCount, 0, true),
     happyDailyDate,
-    happyDailyEarned: Math.min(10, safeNonNegative(data.happyDailyEarned, 0, true)),
+    happyDailyEarned: safeNonNegative(data.happyDailyEarned, 0, true),
     holdings: base.holdings,
     completedQuizIds,
     quizAttempts,

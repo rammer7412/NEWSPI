@@ -1,6 +1,7 @@
 "use client";
 
-import { ChartNoAxesCombined, Coins, RotateCcw, Sparkles } from "lucide-react";
+import { Coins, RotateCcw, Sparkles } from "lucide-react";
+import { NewspiMark } from "@/components/NewspiMark";
 import { formatCoin, formatCountdown } from "@/lib/format";
 
 export type Tab = "home" | "market" | "portfolio" | "history" | "missions" | "happy";
@@ -27,7 +28,7 @@ export function Header({ tab, onTabChange, coins, totalAssets, secondsToNextTick
     <header className="site-header">
       <div className="header-main">
         <button className="brand" onClick={() => onTabChange("home")} aria-label="NEWSPI 홈으로 이동">
-          <span className="brand-mark"><ChartNoAxesCombined size={23} strokeWidth={2.6} /></span>
+          <span className="brand-mark"><NewspiMark /></span>
           <span className="brand-word">NEWSPI<span className="brand-dot">.</span><small>뉴스피</small></span>
         </button>
         <nav className="desktop-nav" aria-label="주 메뉴">
