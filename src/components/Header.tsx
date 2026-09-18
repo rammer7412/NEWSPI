@@ -3,7 +3,7 @@
 import { ChartNoAxesCombined, Coins, RotateCcw, Sparkles } from "lucide-react";
 import { formatCoin, formatCountdown } from "@/lib/format";
 
-export type Tab = "home" | "market" | "portfolio" | "happy";
+export type Tab = "home" | "market" | "portfolio" | "history" | "missions" | "happy";
 
 type Props = {
   tab: Tab;
@@ -19,6 +19,8 @@ export function Header({ tab, onTabChange, coins, totalAssets, secondsToNextTick
     { id: "home", label: "뉴스 룰렛" },
     { id: "market", label: "이슈 거래소" },
     { id: "portfolio", label: "내 포트폴리오" },
+    { id: "history", label: "뉴스 기록" },
+    { id: "missions", label: "오늘의 미션" },
     { id: "happy", label: "행복한 뒤주" },
   ];
   return (

@@ -1,9 +1,8 @@
 import { ISSUE_DEFINITIONS } from "@/data/market-issues";
-import type { IssueId, MarketIssue, MarketPrice, UserState } from "@/types";
+import type { IssueId, MarketDirection, MarketIssue, MarketPrice, UserState } from "@/types";
 
 export const MAX_DEMO_DAY = 365;
 export const MARKET_TICK_MS = 60_000;
-export const NEWS_IMPACT_RATE = 0.03;
 const MAX_CATCH_UP_TICKS = 60;
 const MAX_PRICE_HISTORY = 60;
 
@@ -31,10 +30,14 @@ export function getMarketIssues(state: UserState): MarketIssue[] {
   }));
 }
 
-function movePrice(price: MarketPrice, direction: 1 | -1, rate: number): MarketPrice {
-  const step = Math.max(1, Math.round(price.currentPrice * rate));
-  const candidate = price.currentPrice + direction * step;
-  const currentPrice = Math.max(10, candidate);
+export function clampMagnitude(value: number): number {
+  return Number.isFinite(value) ? Math.min(5, Math.max(0.5, Math.abs(value))) : 0.5;
+}
+
+function movePrice(price: MarketPrice, rate: number): MarketPrice {
+  const step = Math.floor(price.currentPrice * Math.abs(rate) * 100 + 1e-9) / 100;
+  const candidate = price.currentPrice + Math.sign(rate) * step;
+  const currentPrice = Math.max(10, Math.round(candidate * 100) / 100);
   return {
     previousPrice: price.currentPrice,
     currentPrice,
@@ -48,10 +51,9 @@ export function advanceMarketTicks(state: UserState, now: number, random = Math.
   let market = state.market;
   for (let tick = 0; tick < due; tick += 1) {
     market = Object.fromEntries(ISSUE_DEFINITIONS.map((issue) => {
-      const sample = random();
-      const direction: 1 | -1 = sample < 0.5 ? -1 : 1;
-      const rate = 0.005 + Math.abs(sample - 0.5) * 0.02;
-      return [issue.id, movePrice(market[issue.id], direction, rate)];
+      const sample = Math.min(1, Math.max(0, random()));
+      const rate = (sample - 0.5) * 0.01;
+      return [issue.id, movePrice(market[issue.id], rate)];
     })) as Record<IssueId, MarketPrice>;
   }
   const nextTickAt = state.nextMarketTickAt + due * MARKET_TICK_MS;
@@ -63,11 +65,12 @@ export function advanceMarketTicks(state: UserState, now: number, random = Math.
   };
 }
 
-export function applyIssueImpact(market: UserState["market"], id: IssueId, direction: "positive" | "negative" | "neutral"): UserState["market"] {
-  if (direction === "neutral") return market;
+export function applyIssueImpact(market: UserState["market"], id: IssueId, direction: MarketDirection, magnitude: number): UserState["market"] {
+  if (direction === "NEUTRAL") return market;
+  const rate = clampMagnitude(magnitude) / 100;
   return {
     ...market,
-    [id]: movePrice(market[id], direction === "positive" ? 1 : -1, NEWS_IMPACT_RATE),
+    [id]: movePrice(market[id], direction === "UP" ? rate : -rate),
   };
 }
 

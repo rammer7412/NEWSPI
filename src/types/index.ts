@@ -28,11 +28,19 @@ export type Quiz = {
   explanation: string;
 };
 
+export type MarketDirection = "UP" | "NEUTRAL" | "DOWN";
+export type MarketImpact = {
+  relatedIssue: IssueId;
+  direction: MarketDirection;
+  magnitude: number;
+  reason: string;
+};
+
 export type AnalyzedNews = {
   summary: [string, string, string];
   whyItMatters: string;
   issueId: IssueId;
-  marketImpact: { direction: "positive" | "negative" | "neutral"; reason: string };
+  marketImpact: MarketImpact;
   quiz: Quiz;
   insufficient: boolean;
 };
@@ -51,9 +59,49 @@ export type MarketIssue = {
 export type MarketPrice = Pick<MarketIssue, "currentPrice" | "previousPrice" | "priceHistory">;
 
 export type Holding = { quantity: number; averagePrice: number };
+export type PredictionResult = "EXACT" | "DIRECTION_ONLY" | "MISS";
+export type Prediction = {
+  selectedIssue: IssueId;
+  selectedDirection: MarketDirection;
+  betAmount: number;
+  result: PredictionResult;
+  profit: number;
+};
+export type NewsActivity = {
+  articleId: string;
+  title: string;
+  category: NewsCategory;
+  source: string;
+  publishedAt: string;
+  viewedAt: string;
+  originalLink: string;
+  summary: string[];
+  importance: string;
+  isLive: boolean;
+  quizAnswered: boolean;
+  quizCorrect: boolean;
+  quizAttempts: number;
+  quizReward: number;
+  hackEvent: boolean;
+  prediction?: Prediction;
+};
+export type HackEventState = { active: boolean; resolved: boolean; prediction?: Prediction; pendingAnalysis?: AnalyzedNews };
+export const MISSION_IDS = ["explorer", "streak", "hacker"] as const;
+export type MissionId = (typeof MISSION_IDS)[number];
+export type DailyMissionState = {
+  date: string;
+  readArticleIds: string[];
+  quizStreak: number;
+  predictedArticleIds: string[];
+  claimed: Record<MissionId, boolean>;
+  allClaimed: boolean;
+};
 export type UserState = {
+  version: number;
   coins: number;
   happyTypingCount: number;
+  happyDailyDate: string;
+  happyDailyEarned: number;
   holdings: Record<IssueId, Holding>;
   completedQuizIds: string[];
   quizAttempts: Record<string, number>;
@@ -64,4 +112,10 @@ export type UserState = {
   nextMarketTickAt: number;
   marketTickCount: number;
   processedImpactIds: string[];
+  newsHistory: NewsActivity[];
+  hackEvents: Record<string, HackEventState>;
+  hackNormalStreak: number;
+  dailyMission: DailyMissionState;
+  quizCurrentStreak: number;
+  totalNewsCoinsEarned: number;
 };

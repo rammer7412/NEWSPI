@@ -5,3 +5,4 @@ out/
 !.env.example
 *.tsbuildinfo
 npm-debug.log*
+.codex

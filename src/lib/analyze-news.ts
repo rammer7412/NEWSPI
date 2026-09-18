@@ -1,5 +1,6 @@
 import { fallbackNews } from "@/lib/naver-news";
 import { cleanText, safeHttpUrl } from "@/lib/sanitize";
+import { clampMagnitude } from "@/lib/market";
 import { ISSUE_IDS, NEWS_CATEGORIES, type AnalyzedNews, type NewsCategory } from "@/types";
 
 export type AnalyzeInput = {
@@ -43,7 +44,7 @@ export function unavailableAnalysis(input: AnalyzeInput): AnalyzedNews {
     summary: [input.title, input.description || "기사 설명이 제공되지 않았습니다.", ""],
     whyItMatters: "원문 기반 분석을 완료하지 못했습니다. 원문에서 내용을 확인해 주세요.",
     issueId: defaultIssue[input.category],
-    marketImpact: { direction: "neutral", reason: "기사의 시장 영향을 확인할 수 없습니다." },
+    marketImpact: { relatedIssue: defaultIssue[input.category], direction: "NEUTRAL", magnitude: 0, reason: "기사의 시장 영향을 확인할 수 없습니다." },
     quiz: emptyQuiz, insufficient: true,
   };
 }
@@ -58,11 +59,13 @@ const schema = {
     marketImpact: {
       type: "object", additionalProperties: false,
       properties: {
-        direction: { type: "string", enum: ["positive", "negative", "neutral"] },
+        relatedIssue: { type: "string", enum: ISSUE_IDS },
+        direction: { type: "string", enum: ["UP", "NEUTRAL", "DOWN"] },
+        magnitude: { type: "number" },
         reason: { type: "string" },
         evidence: { type: "string" },
       },
-      required: ["direction", "reason", "evidence"],
+      required: ["relatedIssue", "direction", "magnitude", "reason", "evidence"],
     },
     quiz: {
       type: "object", additionalProperties: false,
@@ -94,7 +97,9 @@ function validateAnalysis(value: unknown): GeneratedAnalysis | null {
       !data.summary.every((part) => typeof part === "string") ||
       typeof data.whyItMatters !== "string" ||
       !ISSUE_IDS.includes(data.issueId as AnalyzedNews["issueId"]) ||
-      !impact || !["positive", "negative", "neutral"].includes(impact.direction as string) ||
+      !impact || !ISSUE_IDS.includes(impact.relatedIssue as AnalyzedNews["issueId"]) ||
+      !["UP", "NEUTRAL", "DOWN"].includes(impact.direction as string) ||
+      typeof impact.magnitude !== "number" || !Number.isFinite(impact.magnitude) ||
       typeof impact.reason !== "string" || typeof impact.evidence !== "string" ||
       typeof data.insufficient !== "boolean" || !quiz ||
       typeof quiz.question !== "string" ||
@@ -124,8 +129,9 @@ export async function analyzeWithOpenAI(input: AnalyzeInput, articleText: string
         "quiz.evidence에는 정답 문구를 포함하는 본문의 짧은 근거 문장을 그대로 복사하세요. 해설도 이 근거만 사용하세요.",
         "본문 정보가 부족하면 insufficient=true로 하고 quiz의 문자열을 비우세요. 출처 URL은 만들거나 수정하지 마세요.",
         "issueId는 주제에 맞게 AI_TECH, SEMICONDUCTOR, ECONOMY, GLOBAL, SOCIETY, CULTURE, SPORTS 중 하나를 고르세요.",
-        "marketImpact는 선택한 issueId의 가상 지수에 대한 기사 내용의 명확한 호재면 positive, 악재면 negative, 불분명하면 neutral로 분류하세요. 뉴스의 도덕적 감정이나 정치적 견해를 시장 방향으로 해석하지 마세요.",
-        "positive 또는 negative일 때 marketImpact.evidence에 방향 판단의 근거가 되는 기사 본문의 짧은 문구를 그대로 복사하세요. 근거가 없으면 neutral로 두고 evidence는 비우세요. 가격이나 변동률은 결정하지 마세요.",
+        "marketImpact.relatedIssue는 issueId와 동일하게 쓰세요. 기사 내용의 명확한 호재면 UP, 악재면 DOWN, 불분명하면 NEUTRAL로 분류하세요. 뉴스의 도덕적 감정이나 정치적 견해를 시장 방향으로 해석하지 마세요.",
+        "UP 또는 DOWN일 때 marketImpact.evidence에 방향 판단 근거가 되는 본문의 짧은 문구를 그대로 복사하세요. 근거가 없으면 NEUTRAL로 두고 evidence는 비우세요.",
+        "marketImpact.magnitude는 일반 기사 0.5~3, 매우 중요한 기사만 3~5의 퍼센트 숫자로 쓰세요. NEUTRAL은 0입니다. 실제 주가 예측이 아닌 게임용 가상 반응입니다.",
       ].join(" "),
       input: JSON.stringify({ ...input, articleText }),
       text: { format: { type: "json_schema", name: "newspi_analysis", strict: true, schema } },
@@ -144,10 +150,12 @@ export async function analyzeWithOpenAI(input: AnalyzeInput, articleText: string
   if (!analysis) throw new Error("OPENAI_INVALID_ANALYSIS");
   const source = cleanText(articleText).replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
   const impactEvidence = cleanText(analysis.marketImpact.evidence).replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
-  const marketImpact: AnalyzedNews["marketImpact"] = analysis.marketImpact.direction !== "neutral" &&
+  const marketImpact: AnalyzedNews["marketImpact"] = analysis.marketImpact.direction !== "NEUTRAL" &&
     impactEvidence.length >= 8 && source.includes(impactEvidence) && analysis.marketImpact.reason.trim()
-      ? { direction: analysis.marketImpact.direction, reason: analysis.marketImpact.reason }
-      : { direction: "neutral", reason: "기사 본문에서 해당 이슈의 뚜렷한 호재·악재를 확인하지 못했습니다." };
+      ? { relatedIssue: analysis.issueId, direction: analysis.marketImpact.direction,
+        magnitude: clampMagnitude(analysis.marketImpact.magnitude), reason: analysis.marketImpact.reason }
+      : { relatedIssue: analysis.issueId, direction: "NEUTRAL", magnitude: 0,
+        reason: "기사 본문에서 해당 이슈의 뚜렷한 호재·악재를 확인하지 못했습니다." };
   const { evidence, ...quiz } = analysis.quiz;
   if (!analysis.insufficient) {
     const answer = cleanText(analysis.quiz.choices[analysis.quiz.answerIndex]).replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
