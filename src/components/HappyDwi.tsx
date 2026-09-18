@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Coins, Heart, PenLine, Sparkles } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { HAPPY_PHRASES } from "@/data/happy-phrases";
 import { formatCoin, formatNumber } from "@/lib/format";
 import { HAPPY_DAILY_LIMIT } from "@/lib/game";
@@ -11,23 +11,30 @@ type Props = {
   completedCount: number;
   dailyEarned: number;
   spinCost: number;
-  onEarn: (typedText: string) => { ok: boolean; message: string };
+  onEarn: (typedText: string) => { ok: boolean; message: string } | Promise<{ ok: boolean; message: string }>;
   onGoHome: () => void;
+  busy?: boolean;
 };
 
-export function HappyDwi({ coins, completedCount, dailyEarned, spinCost, onEarn, onGoHome }: Props) {
+export function HappyDwi({ coins, completedCount, dailyEarned, spinCost, onEarn, onGoHome, busy = false }: Props) {
   const [typedText, setTypedText] = useState("");
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const submitting = useRef(false);
   const phrase = HAPPY_PHRASES[completedCount % HAPPY_PHRASES.length];
   const progress = Math.min(100, Math.round((typedText.length / phrase.length) * 100));
   const coinsToSpin = Math.max(0, spinCost - coins);
   const canEarn = coins < spinCost && dailyEarned < HAPPY_DAILY_LIMIT;
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = onEarn(typedText);
-    setFeedback(result);
-    if (result.ok) setTypedText("");
+    if (submitting.current || busy) return;
+    submitting.current = true;
+    try {
+      const result = await onEarn(typedText);
+      setFeedback(result);
+      if (result.ok) setTypedText("");
+    } catch { setFeedback({ ok: false, message: "보상을 저장하지 못했습니다. 다시 시도해 주세요." }); }
+    finally { submitting.current = false; }
   }
 
   return <div className="happy-layout">
@@ -46,7 +53,7 @@ export function HappyDwi({ coins, completedCount, dailyEarned, spinCost, onEarn,
             <textarea id="happy-typing" value={typedText} onChange={(event) => { setTypedText(event.target.value); if (feedback) setFeedback(null); }} placeholder="위 문장을 여기에 적어 주세요" rows={4} maxLength={phrase.length + 30} spellCheck={false} />
             <div className="happy-progress-row"><span>입력 진행도</span><strong>{progress}%</strong></div>
             <div className="happy-progress" role="progressbar" aria-label="문장 입력 진행도" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}><span style={{ width: String(progress) + "%" }} /></div>
-            <button className="primary-button happy-submit" type="submit" disabled={!typedText.trim()}><PenLine size={17} /> 문장 제출하고 1 C 받기 <ArrowRight size={16} /></button>
+            <button className="primary-button happy-submit" type="submit" disabled={!typedText.trim() || busy}><PenLine size={17} /> 문장 제출하고 1 C 받기 <ArrowRight size={16} /></button>
           </form>
         </> : <div className="happy-closed"><Heart size={26} /><strong>{coins >= spinCost ? "행복한 뒤주는 파산 위기에 처한 백성에게만 열립니다." : "오늘 받을 수 있는 10 C를 모두 받았습니다."}</strong><p>{coins >= spinCost ? "다시 10 C 미만이 되면 열립니다." : "내일 다시 문장을 적을 수 있습니다."}</p></div>}
         {feedback && <div className={feedback.ok ? "happy-feedback success" : "happy-feedback error"} role="status">{feedback.ok ? <Coins size={18} /> : <Heart size={18} />}<span>{feedback.message}</span></div>}

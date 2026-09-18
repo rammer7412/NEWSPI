@@ -129,7 +129,7 @@ function normalizeDaily(value: unknown): DailyMissionState {
   };
 }
 
-export function normalizeUserState(value: unknown): UserState {
+export function normalizeUserState(value: unknown, rollover = true): UserState {
   const base = initialUserState();
   if (!value || typeof value !== "object") return base;
   const data = value as Record<string, unknown>;
@@ -204,7 +204,7 @@ export function normalizeUserState(value: unknown): UserState {
   }
   const happyDailyDate = typeof data.happyDailyDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(data.happyDailyDate)
     ? data.happyDailyDate : localDateKey();
-  return rolloverDailyState({
+  const normalized: UserState = {
     version: 2,
     coins: legacyFreshBalance ? INITIAL_COINS : Math.round(safeNonNegative(data.coins, INITIAL_COINS) * 100) / 100,
     happyTypingCount: safeNonNegative(data.happyTypingCount, 0, true),
@@ -228,7 +228,8 @@ export function normalizeUserState(value: unknown): UserState {
     quizCurrentStreak: safeNonNegative(data.quizCurrentStreak, 0, true),
     totalNewsCoinsEarned: typeof data.totalNewsCoinsEarned === "number" && Number.isFinite(data.totalNewsCoinsEarned)
       ? Math.trunc(data.totalNewsCoinsEarned) : legacyNewsEarnings,
-  }, now);
+  };
+  return rollover ? rolloverDailyState(normalized, now) : normalized;
 }
 
 export function loadUserState(): UserState {

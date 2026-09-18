@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { analyzeWithOpenAI, findDemoAnalysis, unavailableAnalysis, validateAnalyzeInput } from "@/lib/analyze-news";
+import { analyzeWithFactChat, findDemoAnalysis, unavailableAnalysis, validateAnalyzeInput } from "@/lib/analyze-news";
 import { fetchArticleText } from "@/lib/article-body";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   if (!input) return NextResponse.json({ message: "올바른 기사 정보가 필요합니다." }, { status: 400 });
   const demo = findDemoAnalysis(input);
   if (demo) return NextResponse.json({ analysis: demo, mode: "demo" });
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.FACTCHAT_API_KEY || !process.env.FACTCHAT_MODEL) {
     return NextResponse.json({
       analysis: unavailableAnalysis(input), mode: "unavailable",
       message: "AI 키가 없어 원문 기반 퀴즈를 생성하지 못했습니다.",
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     });
   }
   try {
-    const analysis = await analyzeWithOpenAI(input, articleText);
+    const analysis = await analyzeWithFactChat(input, articleText);
     return NextResponse.json({ analysis, mode: "ai" });
   } catch {
     return NextResponse.json({

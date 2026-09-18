@@ -26,6 +26,7 @@ function load(name) {
 const game = load("lib/game");
 const market = load("lib/market");
 const storage = load("lib/storage");
+const migration = load("lib/db/legacy-migration");
 const demo = nodeRequire("../src/data/fallback-news.json")[0];
 const article = (id) => ({ id, title: `데모 ${id}`, description: "", category: "technology",
   sourceUrl: "https://example.com/news", source: "테스트", publishedAt: new Date().toISOString(), isFallback: true });
@@ -164,4 +165,33 @@ test("뒤주 하루 제한, 날짜 초기화, 기록 100개 제한, 이전 데�
   assert.equal(migrated.totalNewsCoinsEarned, 100);
   assert.equal(migrated.cachedAnalyses.old.marketImpact.direction, "UP");
   assert.equal(migrated.hackEvents["old-news"].active, false);
+});
+
+test("기존 게임 키를 정확히 읽고 이전 성공 후 게임 키만 지운다", () => {
+  assert.deepEqual(migration.LEGACY_GAME_KEYS, ["newspi:user:v1", "newspi:user"]);
+  const values = new Map([["newspi:user:v1", JSON.stringify(storage.initialUserState())], ["newspi:theme", "dark"]]);
+  const prior = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    removeItem: (key) => values.delete(key),
+  };
+  try {
+    assert.equal(migration.readLegacyState().coins, 100);
+    migration.clearLegacyState();
+    assert.equal(values.has("newspi:user:v1"), false);
+    assert.equal(values.get("newspi:theme"), "dark");
+  } finally { globalThis.localStorage = prior; }
+});
+
+test("손상된 이전 데이터는 거부하며 브라우저 값을 유지한다", () => {
+  const values = new Map([["newspi:user:v1", "{bad-json"]]);
+  const prior = globalThis.localStorage;
+  globalThis.localStorage = { getItem: (key) => values.get(key) ?? null, removeItem: (key) => values.delete(key) };
+  try {
+    assert.throws(() => migration.readLegacyState());
+    assert.equal(values.get("newspi:user:v1"), "{bad-json");
+    const invalid = { ...storage.initialUserState(), holdings: { ...storage.initialUserState().holdings,
+      AI_TECH: { quantity: -1, averagePrice: 100 } } };
+    assert.throws(() => migration.validateLegacyState(invalid));
+  } finally { globalThis.localStorage = prior; }
 });

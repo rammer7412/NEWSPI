@@ -107,6 +107,7 @@ export type UserState = {
   quizAttempts: Record<string, number>;
   seenNewsIds: string[];
   cachedAnalyses: Record<string, AnalyzedNews>;
+  analysisCacheOrder?: string[];
   currentDay: number;
   market: Record<IssueId, MarketPrice>;
   nextMarketTickAt: number;

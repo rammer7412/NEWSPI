@@ -10,10 +10,11 @@ const MISSIONS: Record<MissionId, { title: string; task: string; target: number;
   hacker: { title: "해커의 역습", task: "해킹 이벤트에서 1회 예측 완료", target: 1, Icon: Shield },
 };
 
-export function DailyMissions({ state, onClaim, onClaimAll }: {
+export function DailyMissions({ state, onClaim, onClaimAll, busy = false }: {
   state: UserState;
-  onClaim: (id: MissionId) => boolean;
-  onClaimAll: () => boolean;
+  onClaim: (id: MissionId) => boolean | Promise<boolean>;
+  onClaimAll: () => boolean | Promise<boolean>;
+  busy?: boolean;
 }) {
   const daily = state.dailyMission;
   const readyForAll = MISSION_IDS.every((id) => daily.claimed[id]);
@@ -28,9 +29,9 @@ export function DailyMissions({ state, onClaim, onClaimAll }: {
         <span className="section-kicker">TODAY&apos;S MISSION</span><h2>{mission.title}</h2><p>{mission.task}</p>
         <div className="mission-progress-line"><span>진행도</span><strong>{progress} / {mission.target}</strong></div>
         <div className="happy-progress" role="progressbar" aria-label={`${mission.title} 진행도`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={mission.target}><span style={{ width: `${progress / mission.target * 100}%` }} /></div>
-        <button className="primary-button mission-claim" onClick={() => onClaim(id)} disabled={!ready || daily.claimed[id]}>{daily.claimed[id] ? <><Check size={16} /> 보상 수령 완료</> : ready ? <><Gift size={16} /> 보상 받기 · {MISSION_REWARD} C</> : <><Flag size={16} /> 진행 중</>}</button>
+        <button className="primary-button mission-claim" onClick={() => { void Promise.resolve(onClaim(id)).catch(() => undefined); }} disabled={!ready || daily.claimed[id] || busy}>{daily.claimed[id] ? <><Check size={16} /> 보상 수령 완료</> : ready ? <><Gift size={16} /> 보상 받기 · {MISSION_REWARD} C</> : <><Flag size={16} /> 진행 중</>}</button>
       </section>;
     })}</div>
-    <section className="mission-all glass-panel"><div><span className="section-kicker">COMPLETE ALL</span><h2>오늘의 모든 미션 완료</h2><p>세 미션의 보상을 모두 수령하면 추가 {MISSION_REWARD} C를 받을 수 있습니다.</p></div><button className="primary-button" onClick={onClaimAll} disabled={!readyForAll || daily.allClaimed}>{daily.allClaimed ? "전체 보상 수령 완료" : `추가 보상 받기 · ${MISSION_REWARD} C`}</button></section>
+    <section className="mission-all glass-panel"><div><span className="section-kicker">COMPLETE ALL</span><h2>오늘의 모든 미션 완료</h2><p>세 미션의 보상을 모두 수령하면 추가 {MISSION_REWARD} C를 받을 수 있습니다.</p></div><button className="primary-button" onClick={() => { void Promise.resolve(onClaimAll()).catch(() => undefined); }} disabled={!readyForAll || daily.allClaimed || busy}>{daily.allClaimed ? "전체 보상 수령 완료" : `추가 보상 받기 · ${MISSION_REWARD} C`}</button></section>
   </div>;
 }

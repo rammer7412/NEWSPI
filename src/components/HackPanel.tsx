@@ -12,8 +12,8 @@ type Props = {
   coins: number;
   event: HackEventState;
   actual: MarketImpact;
-  onPredict: (issue: IssueId, direction: MarketDirection, amount: number) => ActionResult;
-  onRestore: () => ActionResult;
+  onPredict: (issue: IssueId, direction: MarketDirection, amount: number) => ActionResult | Promise<ActionResult>;
+  onRestore: () => ActionResult | Promise<ActionResult>;
 };
 
 const DIRECTION_OPTIONS: { value: MarketDirection; label: string }[] = [
@@ -28,18 +28,22 @@ export function HackPanel({ coins, event, actual, onPredict, onRestore }: Props)
   const [feedback, setFeedback] = useState("");
   const locked = useRef(false);
 
-  function submit() {
+  async function submit() {
     if (locked.current || !issue || !direction || amount > coins) return;
     locked.current = true;
-    const result = onPredict(issue, direction, amount);
-    if (!result.ok) { locked.current = false; setFeedback(result.message); }
+    try {
+      const result = await onPredict(issue, direction, amount);
+      if (!result.ok) { locked.current = false; setFeedback(result.message); }
+    } catch { locked.current = false; setFeedback("예측을 저장하지 못했습니다. 다시 시도해 주세요."); }
   }
 
-  function restore() {
+  async function restore() {
     if (locked.current || coins >= 10) return;
     locked.current = true;
-    const result = onRestore();
-    if (!result.ok) { locked.current = false; setFeedback(result.message); }
+    try {
+      const result = await onRestore();
+      if (!result.ok) { locked.current = false; setFeedback(result.message); }
+    } catch { locked.current = false; setFeedback("분석을 복구하지 못했습니다. 다시 시도해 주세요."); }
   }
 
   if (event.resolved) {

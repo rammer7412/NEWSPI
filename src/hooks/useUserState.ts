@@ -5,12 +5,14 @@ import { advanceMarketTicks } from "@/lib/market";
 import { initialUserState, loadUserState, saveUserState } from "@/lib/storage";
 import { applyArticleImpactOnce, applyHappyReward, applyQuizAward, applyWrongQuizAnswer, claimAllMissionReward, claimMissionReward, finalizeHackOnce, HAPPY_DAILY_LIMIT, recordArticleView, registerAnalyzedArticle, rolloverDailyState } from "@/lib/game";
 import { HAPPY_PHRASES, normalizeHappyPhrase } from "@/data/happy-phrases";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { useDbUserState } from "@/hooks/useDbUserState";
 import type { AnalyzedNews, IssueId, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
 
 type TradeResult = { ok: boolean; message: string };
 export const ROULETTE_COST = 10;
 
-export function useUserState() {
+export function useLocalUserState() {
   const [state, setState] = useState<UserState>(initialUserState);
   const stateRef = useRef(state);
   const [hydrated, setHydrated] = useState(false);
@@ -104,11 +106,13 @@ export function useUserState() {
     return { ok: true, message: "잘 적었어요. 1 C가 보유 코인에 추가됐습니다." };
   }, [commit]);
 
-  const recordWrongAttempt = useCallback((id: string) => {
+  const recordWrongAttempt = useCallback((id: string, _selectedIndex: number) => {
+    void _selectedIndex;
     commit((previous) => applyWrongQuizAnswer(previous, id));
   }, [commit]);
 
-  const awardQuiz = useCallback((id: string): number => {
+  const awardQuiz = useCallback((id: string, _selectedIndex: number): number => {
+    void _selectedIndex;
     const before = stateRef.current.coins;
     commit((previous) => applyQuizAward(previous, id));
     return Math.round((stateRef.current.coins - before) * 100) / 100;
@@ -197,7 +201,12 @@ export function useUserState() {
 
   const reset = useCallback(() => commit(() => initialUserState()), [commit]);
 
-  return { state, hydrated, secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins,
+  return { state, hydrated, loadingError: null, actionError: null, busy: false, retryLoad: () => {},
+    secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins,
     refundRouletteCoins, earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack,
     claimMission, claimAllMissions, reset };
 }
+
+// The mode is fixed at build time. A configured deployment never persists game
+// data to localStorage; the local hook is used only by an unconfigured demo.
+export const useUserState = isSupabaseConfigured ? useDbUserState : useLocalUserState;

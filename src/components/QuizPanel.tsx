@@ -9,8 +9,8 @@ type Props = {
   quiz: Quiz;
   completed: boolean;
   wrongAttempts: number;
-  onWrong: () => void;
-  onCorrect: () => number;
+  onWrong: (index: number) => void | Promise<void>;
+  onCorrect: (index: number) => number | Promise<number>;
   onMarket: () => void;
 };
 
@@ -18,20 +18,27 @@ type Result = { kind: "correct" | "wrong" | "exhausted"; reward: number; selecte
 
 export function QuizPanel({ quiz, completed, wrongAttempts, onWrong, onCorrect, onMarket }: Props) {
   const [result, setResult] = useState<Result>(null);
+  const [error, setError] = useState("");
   const selectionLock = useRef(false);
   const alreadyRewarded = completed && result?.kind !== "correct";
   const exhausted = wrongAttempts >= 2 && !result;
   const locked = !!result || completed || exhausted;
 
-  function select(index: number) {
+  async function select(index: number) {
     if (locked || selectionLock.current) return;
     selectionLock.current = true;
-    if (index === quiz.answerIndex) {
-      const reward = onCorrect();
-      setResult({ kind: "correct", reward, selected: index });
-    } else {
-      onWrong();
-      setResult({ kind: wrongAttempts + 1 >= 2 ? "exhausted" : "wrong", reward: 0, selected: index });
+    setError("");
+    try {
+      if (index === quiz.answerIndex) {
+        const reward = await onCorrect(index);
+        setResult({ kind: "correct", reward, selected: index });
+      } else {
+        await onWrong(index);
+        setResult({ kind: wrongAttempts + 1 >= 2 ? "exhausted" : "wrong", reward: 0, selected: index });
+      }
+    } catch {
+      selectionLock.current = false;
+      setError("퀴즈 결과를 저장하지 못했습니다. 다시 시도해 주세요.");
     }
   }
 
@@ -54,6 +61,7 @@ export function QuizPanel({ quiz, completed, wrongAttempts, onWrong, onCorrect, 
       {result?.kind === "correct" && <div className="quiz-feedback success"><div className="reward-spark"><Coins size={24} /></div><div><strong>정답입니다! <span className="earned-coins">+{result.reward} C</span></strong><p>{quiz.explanation}</p></div></div>}
       {(result?.kind === "exhausted" || exhausted) && <div className="quiz-feedback ended"><LockKeyhole size={19} /><div><strong>이번 퀴즈의 도전이 끝났습니다.</strong><p>{quiz.explanation}</p></div></div>}
       {alreadyRewarded && <div className="quiz-feedback ended"><LockKeyhole size={19} /><div><strong>이미 보상을 받은 뉴스입니다.</strong><p>{quiz.explanation}</p></div></div>}
+      {error && <p className="inline-alert" role="alert">{error}</p>}
       {reveal && <button className="primary-button quiz-market-button" onClick={onMarket}>관련 이슈 거래소 보기 <ArrowRight size={17} /></button>}
       {!locked && <p className="quiz-hint">첫 번째 정답 {FIRST_TRY_QUIZ_REWARD} C · 두 번째 정답 {RETRY_QUIZ_REWARD} C · 뉴스당 보상 1회</p>}
     </section>
