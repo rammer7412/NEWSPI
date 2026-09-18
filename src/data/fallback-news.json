@@ -1,0 +1,46 @@
+[
+  {
+    "id": "demo-domestic-1", "category": "domestic", "title": "[데모] 지역 도서관, 야간 운영 시범 프로그램 마련", "description": "가상 시나리오: 한 지역 도서관이 직장인을 위해 평일 운영 시간을 밤 9시까지 늘리는 시범 프로그램을 마련했다.", "sourceUrl": "https://www.nl.go.kr/", "source": "NEWSPI 데모 · 국립중앙도서관 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["지역 도서관이 야간 운영 시범 프로그램을 마련했습니다.", "평일 운영 시간이 밤 9시까지 늘어납니다.", "직장인의 도서관 이용을 돕는 것이 목적입니다."], "whyItMatters": "공공시설 이용 시간의 변화는 주민의 생활 선택지에 영향을 줍니다.", "issueId": "SOCIETY", "quiz": { "question": "데모 기사에서 도서관 운영은 몇 시까지 늘어나나요?", "choices": ["오후 6시", "오후 8시", "밤 9시", "밤 11시"], "answerIndex": 2, "explanation": "설명에 평일 운영 시간을 밤 9시까지 늘린다고 적혀 있습니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-domestic-2", "category": "domestic", "title": "[데모] 도시 공원, 주말 걷기 행사 운영", "description": "가상 시나리오: 시청이 시민 건강 프로그램으로 도시 공원에서 토요일 오전 걷기 행사를 운영한다고 발표했다.", "sourceUrl": "https://www.gov.kr/", "source": "NEWSPI 데모 · 정부24 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["시청이 도시 공원 걷기 행사를 마련했습니다.", "행사는 토요일 오전에 열립니다.", "시민 건강 프로그램의 하나입니다."], "whyItMatters": "지역 참여 프로그램은 시민의 여가 활동에 영향을 줍니다.", "issueId": "SOCIETY", "quiz": { "question": "데모 기사에서 걷기 행사는 언제 열리나요?", "choices": ["월요일 오후", "수요일 저녁", "토요일 오전", "일요일 밤"], "answerIndex": 2, "explanation": "설명에 토요일 오전이라고 명시돼 있습니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-world-1", "category": "world", "title": "[데모] 국제 도시들, 대중교통 정보 공유 회의 개최", "description": "가상 시나리오: 여러 도시의 교통 담당자들이 버스 도착 정보 공개 방식을 논의하는 온라인 회의를 열었다.", "sourceUrl": "https://unhabitat.org/", "source": "NEWSPI 데모 · UN-Habitat 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["여러 도시의 교통 담당자가 온라인 회의를 열었습니다.", "버스 도착 정보 공개 방식을 논의했습니다.", "도시 간 정보 공유가 회의의 주제였습니다."], "whyItMatters": "교통 정보 공개 방식은 대중교통 이용 경험과 연결됩니다.", "issueId": "GLOBAL", "quiz": { "question": "데모 회의에서 논의한 정보는 무엇인가요?", "choices": ["버스 도착 정보", "항공 운임", "선박 위치", "자전거 가격"], "answerIndex": 0, "explanation": "설명에 버스 도착 정보 공개 방식이라고 나옵니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-world-2", "category": "world", "title": "[데모] 도시 간 재활용 교육 자료 공동 제작", "description": "가상 시나리오: 세 도시의 교육 기관이 재활용 분리배출을 설명하는 다국어 온라인 자료를 공동 제작하기로 했다.", "sourceUrl": "https://www.unep.org/", "source": "NEWSPI 데모 · UNEP 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["세 도시의 교육 기관이 협력합니다.", "재활용 분리배출 안내 자료를 함께 만듭니다.", "자료는 다국어 온라인 형식으로 제공할 계획입니다."], "whyItMatters": "공통 교육 자료는 도시 간 환경 정보 접근성을 높일 수 있습니다.", "issueId": "GLOBAL", "quiz": { "question": "데모 자료는 어떤 형식으로 제작되나요?", "choices": ["종이 한 장", "다국어 온라인 자료", "라디오 방송", "전화 상담"], "answerIndex": 1, "explanation": "설명에 다국어 온라인 자료라고 명시돼 있습니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-economy-1", "category": "economy", "title": "[데모] 동네 상점, 공동 배송 시범 사업 시작", "description": "가상 시나리오: 소규모 상점 다섯 곳이 배송비를 나누기 위해 같은 지역 주문을 묶어 보내는 시범 사업을 시작했다.", "sourceUrl": "https://www.mss.go.kr/", "source": "NEWSPI 데모 · 중소벤처기업부 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["소규모 상점 다섯 곳이 협력합니다.", "같은 지역 주문을 묶어 배송합니다.", "배송비를 나누는 시범 사업입니다."], "whyItMatters": "배송 방식은 상점의 운영 비용과 고객 편의에 영향을 줄 수 있습니다.", "issueId": "ECONOMY", "quiz": { "question": "데모 사업에 참여한 상점은 몇 곳인가요?", "choices": ["두 곳", "세 곳", "다섯 곳", "열 곳"], "answerIndex": 2, "explanation": "설명에 소규모 상점 다섯 곳이라고 적혀 있습니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-economy-2", "category": "economy", "title": "[데모] 청년 창업팀, 공유 작업실 이용권 도입", "description": "가상 시나리오: 지역 창업 지원 기관이 청년 창업팀에 월 단위 공유 작업실 이용권을 제공하는 프로그램을 발표했다.", "sourceUrl": "https://www.k-startup.go.kr/", "source": "NEWSPI 데모 · K-Startup 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["지역 창업 지원 기관이 새 프로그램을 발표했습니다.", "청년 창업팀에 공유 작업실 이용권을 제공합니다.", "이용권은 월 단위입니다."], "whyItMatters": "작업 공간 비용은 초기 창업팀의 운영 부담에 영향을 줍니다.", "issueId": "ECONOMY", "quiz": { "question": "데모 이용권은 어떤 단위로 제공되나요?", "choices": ["일 단위", "주 단위", "월 단위", "연 단위"], "answerIndex": 2, "explanation": "설명에 월 단위 이용권이라고 적혀 있습니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-technology-1", "category": "technology", "title": "[데모] 연구팀, 반도체 교육용 실습 키트 공개", "description": "가상 시나리오: 한 연구팀이 고등학생에게 반도체 회로의 기본 원리를 설명하는 실습 키트를 공개했다.", "sourceUrl": "https://www.kist.re.kr/", "source": "NEWSPI 데모 · KIST 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["연구팀이 반도체 교육용 키트를 공개했습니다.", "고등학생을 대상으로 합니다.", "반도체 회로의 기본 원리를 실습으로 설명합니다."], "whyItMatters": "기술 교육 도구는 학생의 반도체 이해를 돕습니다.", "issueId": "SEMICONDUCTOR", "quiz": { "question": "데모 실습 키트의 교육 대상은 누구인가요?", "choices": ["초등학생", "고등학생", "대학원생", "은퇴자"], "answerIndex": 1, "explanation": "설명에 고등학생에게 설명하는 키트라고 적혀 있습니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-technology-2", "category": "technology", "title": "[데모] 공공 연구소, 한국어 AI 학습 자료 공개", "description": "가상 시나리오: 공공 연구소가 한국어 문장 분류를 연습할 수 있는 무료 AI 학습 자료를 온라인에 공개했다.", "sourceUrl": "https://www.nia.or.kr/", "source": "NEWSPI 데모 · NIA 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["공공 연구소가 AI 학습 자료를 공개했습니다.", "한국어 문장 분류를 연습할 수 있습니다.", "온라인에서 무료로 제공됩니다."], "whyItMatters": "접근 가능한 교육 자료는 AI 학습의 문턱을 낮춥니다.", "issueId": "AI_TECH", "quiz": { "question": "데모 AI 자료에서 연습하는 작업은 무엇인가요?", "choices": ["음악 작곡", "한국어 문장 분류", "영상 편집", "기상 예측"], "answerIndex": 1, "explanation": "설명에 한국어 문장 분류라고 나옵니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-society-1", "category": "society", "title": "[데모] 주민센터, 디지털 기기 도움 교실 개설", "description": "가상 시나리오: 주민센터가 스마트폰 기본 사용을 배우고 싶은 주민을 위해 매주 화요일 도움 교실을 연다.", "sourceUrl": "https://www.gov.kr/", "source": "NEWSPI 데모 · 정부24 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["주민센터가 디지털 기기 도움 교실을 엽니다.", "스마트폰 기본 사용을 배우는 자리입니다.", "교실은 매주 화요일에 열립니다."], "whyItMatters": "디지털 사용 교육은 주민의 공공 서비스 접근을 돕습니다.", "issueId": "SOCIETY", "quiz": { "question": "데모 도움 교실은 무슨 요일에 열리나요?", "choices": ["월요일", "화요일", "금요일", "토요일"], "answerIndex": 1, "explanation": "설명에 매주 화요일이라고 나옵니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-culture-1", "category": "culture", "title": "[데모] 작은 미술관, 지역 작가 작품 전시 마련", "description": "가상 시나리오: 지역 미술관이 지역 작가 열 명의 그림을 소개하는 무료 전시를 한 달 동안 연다.", "sourceUrl": "https://www.arko.or.kr/", "source": "NEWSPI 데모 · 한국문화예술위원회 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["지역 미술관이 무료 전시를 마련했습니다.", "지역 작가 열 명의 그림을 소개합니다.", "전시 기간은 한 달입니다."], "whyItMatters": "지역 전시는 작가와 관객이 만나는 기회를 늘립니다.", "issueId": "CULTURE", "quiz": { "question": "데모 전시는 얼마 동안 열리나요?", "choices": ["하루", "일주일", "한 달", "일 년"], "answerIndex": 2, "explanation": "설명에 한 달 동안 연다고 명시돼 있습니다." }, "insufficient": false }
+  },
+  {
+    "id": "demo-sports-1", "category": "sports", "title": "[데모] 생활체육센터, 주말 농구 교실 개설", "description": "가상 시나리오: 생활체육센터가 초보자를 대상으로 토요일마다 무료 농구 교실을 운영한다.", "sourceUrl": "https://www.sports.or.kr/", "source": "NEWSPI 데모 · 대한체육회 참고", "publishedAt": "2026-09-01T09:00:00+09:00", "isFallback": true,
+    "analysis": { "summary": ["생활체육센터가 농구 교실을 엽니다.", "초보자를 대상으로 합니다.", "매주 토요일 무료로 운영합니다."], "whyItMatters": "생활체육 프로그램은 주민의 운동 참여 기회를 늘립니다.", "issueId": "SPORTS", "quiz": { "question": "데모 농구 교실은 누구를 대상으로 하나요?", "choices": ["프로 선수", "초보자", "심판", "코치"], "answerIndex": 1, "explanation": "설명에 초보자를 대상으로 한다고 적혀 있습니다." }, "insufficient": false }
+  }
+]
