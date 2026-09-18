@@ -25,13 +25,14 @@ function unavailableFor(article: NewsArticle): AnalyzedNews {
     summary: [article.title, article.description || "기사 설명이 제공되지 않았습니다.", ""],
     whyItMatters: "AI 분석을 사용할 수 없습니다. 원문에서 내용을 확인해 주세요.",
     issueId: issueForCategory(article.category),
+    marketImpact: { direction: "neutral", reason: "기사의 시장 영향을 확인할 수 없습니다." },
     quiz: { question: "", choices: ["", "", "", ""], answerIndex: 0, explanation: "" },
     insufficient: true,
   };
 }
 
 export default function Home() {
-  const { state, hydrated, markSeen, cacheAnalysis, spendRouletteCoins, refundRouletteCoins, earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, advanceDay, reset } = useUserState();
+  const { state, hydrated, secondsToNextTick, markSeen, cacheAnalysis, spendRouletteCoins, refundRouletteCoins, earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, reset } = useUserState();
   const [tab, setTab] = useState<Tab>("home");
   const [selectedIssue, setSelectedIssue] = useState<IssueId>("AI_TECH");
   const [rotation, setRotation] = useState(0);
@@ -47,8 +48,17 @@ export default function Home() {
   const spinRequest = useRef(0);
   const spinLock = useRef(false);
 
-  const market = useMemo(() => getMarketIssues(state.currentDay), [state.currentDay]);
+  const market = useMemo(() => getMarketIssues(state), [state]);
   const totals = useMemo(() => portfolioTotals(state, market), [state, market]);
+
+  function reflectMarketImpact(picked: NewsArticle, analyzed: AnalyzedNews) {
+    const { direction } = analyzed.marketImpact;
+    const result = applyNewsImpact(picked.id, analyzed.issueId, direction);
+    if (!result.applied || direction === "neutral") return;
+    const issueName = ISSUE_BY_ID[analyzed.issueId].name;
+    const rate = ((result.after - result.before) / result.before) * 100;
+    setNotice(`${picked.isFallback ? "DEMO · " : ""}${issueName} ${direction === "positive" ? "호재" : "악재"} 반영: ${formatPercent(rate)} (${formatCoin(result.before)} → ${formatCoin(result.after)})`);
+  }
 
   async function spin() {
     if (!hydrated || spinLock.current) return;
@@ -91,11 +101,12 @@ export default function Home() {
       spinLock.current = false;
       if (data.mode === "demo") setNotice(data.message || "샘플 데이터 사용 중입니다.");
 
-      const analysisCacheKey = picked.isFallback ? picked.id : `full-article-v1:${picked.id}`;
+      const analysisCacheKey = `market-impact-v1:${picked.id}`;
       const cached = state.cachedAnalyses[analysisCacheKey];
       if (cached) {
         setAnalysis(cached);
         setAnalysisMode(picked.isFallback ? "demo" : "ai");
+        reflectMarketImpact(picked, cached);
         return;
       }
       setAnalysisLoading(true);
@@ -115,7 +126,10 @@ export default function Home() {
         if (!analyzed.analysis || !analyzed.mode) throw new Error("ANALYZE_INVALID_RESPONSE");
         setAnalysis(analyzed.analysis);
         setAnalysisMode(analyzed.mode);
-        if (analyzed.mode !== "unavailable") cacheAnalysis(analysisCacheKey, analyzed.analysis);
+        if (analyzed.mode !== "unavailable") {
+          cacheAnalysis(analysisCacheKey, analyzed.analysis);
+          reflectMarketImpact(picked, analyzed.analysis);
+        }
         if (analyzed.mode === "unavailable") setNotice(analyzed.message || "AI 분석을 사용할 수 없습니다.");
       } catch {
         if (requestId !== spinRequest.current) return;
@@ -159,7 +173,7 @@ export default function Home() {
   }
 
   return <div className="site-wrap">
-    <Header tab={tab} onTabChange={setTab} coins={state.coins} totalAssets={totals.totalAssets} currentDay={state.currentDay} onReset={handleReset} />
+    <Header tab={tab} onTabChange={setTab} coins={state.coins} totalAssets={totals.totalAssets} secondsToNextTick={secondsToNextTick} onReset={handleReset} />
     <main className="app-shell">
       {tab === "home" && <>
         <section className="hero"><div className="hero-copy"><span className="hero-overline"><span className="live-dot" /> THE NEWS GAME BEGINS</span><h1>뉴스를 뽑고,<br /><span>읽고, 투자하라<span className="title-dot">.</span></span></h1><p>읽으면 벌고, 알면 오른다.<br />오늘의 뉴스를 게임처럼 경험해 보세요.</p><div className="hero-proof"><span><BookOpen size={15} /> 7개 뉴스 분야</span><span><CircleHelp size={15} /> 지식 퀴즈</span><span><Coins size={15} /> 가상 코인</span></div></div><div className="hero-decor" aria-hidden="true"><div className="decor-ring ring-one" /><div className="decor-ring ring-two" /><span className="decor-symbol">N<span>.</span></span><span className="decor-star star-one">✦</span><span className="decor-star star-two">✦</span></div></section>
@@ -172,7 +186,7 @@ export default function Home() {
         </div></div>
         <section className="market-preview"><div className="preview-heading"><div><span className="section-kicker">MARKET SNAPSHOT</span><h2>지금의 이슈 지수</h2></div><button onClick={() => goToMarket()} className="text-button">거래소 전체 보기 <ArrowRight size={16} /></button></div><div className="preview-grid">{market.slice(0, 3).map((issue) => { const meta = ISSUE_BY_ID[issue.id]; const rate = changePercent(issue); return <button className="preview-card glass-panel" key={issue.id} onClick={() => goToMarket(issue.id)}><span className="preview-icon" style={{ color: meta.color, background: `${meta.color}17` }}>{meta.symbol}</span><span className="preview-name">{issue.name}</span><strong>{formatCoin(issue.currentPrice)}</strong><small className={rate >= 0 ? "positive" : "negative"}>{formatPercent(rate)} <ArrowUpRight size={13} /></small></button>; })}</div></section>
       </>}
-      {tab === "market" && <MarketBoard market={market} state={state} selectedId={selectedIssue} onSelect={setSelectedIssue} onBuy={buy} onSell={sell} onAdvanceDay={advanceDay} />}
+      {tab === "market" && <MarketBoard market={market} state={state} selectedId={selectedIssue} onSelect={setSelectedIssue} onBuy={buy} onSell={sell} secondsToNextTick={secondsToNextTick} />}
       {tab === "portfolio" && <Portfolio state={state} market={market} onMarket={() => goToMarket()} />}
       {tab === "happy" && <HappyDwi coins={state.coins} completedCount={state.happyTypingCount} spinCost={ROULETTE_COST} onEarn={earnHappyCoin} onGoHome={() => setTab("home")} />}
     </main>

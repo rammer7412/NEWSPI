@@ -1,7 +1,7 @@
 "use client";
 
 import { ChartNoAxesCombined, Coins, RotateCcw, Sparkles } from "lucide-react";
-import { formatCoin } from "@/lib/format";
+import { formatCoin, formatCountdown } from "@/lib/format";
 
 export type Tab = "home" | "market" | "portfolio" | "happy";
 
@@ -10,11 +10,11 @@ type Props = {
   onTabChange: (tab: Tab) => void;
   coins: number;
   totalAssets: number;
-  currentDay: number;
+  secondsToNextTick: number;
   onReset: () => void;
 };
 
-export function Header({ tab, onTabChange, coins, totalAssets, currentDay, onReset }: Props) {
+export function Header({ tab, onTabChange, coins, totalAssets, secondsToNextTick, onReset }: Props) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "home", label: "뉴스 룰렛" },
     { id: "market", label: "이슈 거래소" },
@@ -37,7 +37,7 @@ export function Header({ tab, onTabChange, coins, totalAssets, currentDay, onRes
         </div>
       </div>
       <div className="header-sub">
-        <div className="market-open"><span className="live-dot" /> NEWSPI MARKET <span className="sub-divider">/</span> DEMO DAY {String(currentDay + 1).padStart(2, "0")}</div>
+        <div className="market-open"><span className="live-dot" /> NEWSPI MARKET <span className="sub-divider">/</span> 다음 변동 {formatCountdown(secondsToNextTick)}</div>
         <div className="sub-actions"><span><Sparkles size={13} /> 총자산 {formatCoin(totalAssets)}</span><button onClick={onReset} title="저장된 게임 데이터를 초기화합니다"><RotateCcw size={13} /> 데이터 초기화</button></div>
       </div>
       <nav className="mobile-nav" aria-label="모바일 주 메뉴">

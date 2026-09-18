@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getMarketIssues, MAX_DEMO_DAY } from "@/lib/market";
+import { advanceMarketTicks, applyIssueImpact } from "@/lib/market";
 import { initialUserState, loadUserState, saveUserState } from "@/lib/storage";
 import { HAPPY_PHRASES, normalizeHappyPhrase } from "@/data/happy-phrases";
 import type { AnalyzedNews, IssueId, UserState } from "@/types";
@@ -13,14 +13,17 @@ export function useUserState() {
   const [state, setState] = useState<UserState>(initialUserState);
   const stateRef = useRef(state);
   const [hydrated, setHydrated] = useState(false);
+  const [secondsToNextTick, setSecondsToNextTick] = useState(60);
 
   useEffect(() => {
-    const loaded = loadUserState();
+    const loaded = advanceMarketTicks(loadUserState(), Date.now());
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
       stateRef.current = loaded;
+      saveUserState(loaded);
       setState(loaded);
+      setSecondsToNextTick(Math.max(0, Math.ceil((loaded.nextMarketTickAt - Date.now()) / 1000)));
       setHydrated(true);
     });
     return () => { cancelled = true; };
@@ -32,6 +35,23 @@ export function useUserState() {
     saveUserState(next);
     setState(next);
   }, []);
+
+  const syncMarket = useCallback(() => {
+    if (Date.now() >= stateRef.current.nextMarketTickAt) {
+      commit((previous) => advanceMarketTicks(previous, Date.now()));
+    }
+    setSecondsToNextTick(Math.max(0, Math.ceil((stateRef.current.nextMarketTickAt - Date.now()) / 1000)));
+  }, [commit]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const interval = window.setInterval(syncMarket, 1000);
+    document.addEventListener("visibilitychange", syncMarket);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", syncMarket);
+    };
+  }, [hydrated, syncMarket]);
 
   const markSeen = useCallback((id: string) => {
     commit((previous) => ({
@@ -93,8 +113,9 @@ export function useUserState() {
   }, [commit]);
 
   const buy = useCallback((id: IssueId, quantity: number): TradeResult => {
+    syncMarket();
     if (!Number.isInteger(quantity) || quantity <= 0) return { ok: false, message: "매수 수량은 1 이상의 정수여야 합니다." };
-    const price = getMarketIssues(stateRef.current.currentDay).find((issue) => issue.id === id)?.currentPrice;
+    const price = stateRef.current.market[id]?.currentPrice;
     if (!price) return { ok: false, message: "이슈 가격을 확인할 수 없습니다." };
     const cost = price * quantity;
     if (cost > stateRef.current.coins) return { ok: false, message: "보유 코인이 부족합니다." };
@@ -114,13 +135,14 @@ export function useUserState() {
       };
     });
     return { ok: true, message: `${quantity}주를 매수했습니다.` };
-  }, [commit]);
+  }, [commit, syncMarket]);
 
   const sell = useCallback((id: IssueId, quantity: number): TradeResult => {
+    syncMarket();
     if (!Number.isInteger(quantity) || quantity <= 0) return { ok: false, message: "매도 수량은 1 이상의 정수여야 합니다." };
     const holding = stateRef.current.holdings[id];
     if (quantity > holding.quantity) return { ok: false, message: "보유 수량이 부족합니다." };
-    const price = getMarketIssues(stateRef.current.currentDay).find((issue) => issue.id === id)?.currentPrice;
+    const price = stateRef.current.market[id]?.currentPrice;
     if (!price) return { ok: false, message: "이슈 가격을 확인할 수 없습니다." };
     commit((previous) => ({
       ...previous,
@@ -134,15 +156,21 @@ export function useUserState() {
       },
     }));
     return { ok: true, message: `${quantity}주를 매도했습니다.` };
-  }, [commit]);
+  }, [commit, syncMarket]);
 
-  const advanceDay = useCallback((): TradeResult => {
-    if (stateRef.current.currentDay >= MAX_DEMO_DAY) return { ok: false, message: "데모의 마지막 날입니다." };
-    commit((previous) => ({ ...previous, currentDay: previous.currentDay + 1 }));
-    return { ok: true, message: "다음 날의 가상 가격이 반영됐습니다." };
-  }, [commit]);
+  const applyNewsImpact = useCallback((articleId: string, issueId: IssueId, direction: AnalyzedNews["marketImpact"]["direction"]) => {
+    syncMarket();
+    if (stateRef.current.processedImpactIds.includes(articleId)) return { applied: false, before: 0, after: 0 };
+    const before = stateRef.current.market[issueId].currentPrice;
+    commit((previous) => ({
+      ...previous,
+      market: applyIssueImpact(previous.market, issueId, direction),
+      processedImpactIds: [...previous.processedImpactIds, articleId],
+    }));
+    return { applied: true, before, after: stateRef.current.market[issueId].currentPrice };
+  }, [commit, syncMarket]);
 
   const reset = useCallback(() => commit(() => initialUserState()), [commit]);
 
-  return { state, hydrated, markSeen, cacheAnalysis, spendRouletteCoins, refundRouletteCoins, earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, advanceDay, reset };
+  return { state, hydrated, secondsToNextTick, markSeen, cacheAnalysis, spendRouletteCoins, refundRouletteCoins, earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, reset };
 }

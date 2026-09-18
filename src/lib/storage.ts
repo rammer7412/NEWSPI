@@ -1,5 +1,5 @@
-import { ISSUE_IDS, type AnalyzedNews, type Holding, type IssueId, type UserState } from "@/types";
-import { MAX_DEMO_DAY } from "@/lib/market";
+import { ISSUE_IDS, type AnalyzedNews, type Holding, type IssueId, type MarketPrice, type UserState } from "@/types";
+import { initialMarketPrices, MARKET_TICK_MS, MAX_DEMO_DAY } from "@/lib/market";
 
 const STORAGE_KEY = "newspi:user:v1";
 
@@ -17,6 +17,10 @@ export function initialUserState(): UserState {
     seenNewsIds: [],
     cachedAnalyses: {},
     currentDay: 0,
+    market: initialMarketPrices(),
+    nextMarketTickAt: Date.now() + MARKET_TICK_MS,
+    marketTickCount: 0,
+    processedImpactIds: [],
   };
 }
 
@@ -34,6 +38,8 @@ function validAnalysis(value: unknown): value is AnalyzedNews {
   const item = value as Partial<AnalyzedNews>;
   return Array.isArray(item.summary) && item.summary.length === 3 && item.summary.every((part) => typeof part === "string") &&
     typeof item.whyItMatters === "string" && ISSUE_IDS.includes(item.issueId as IssueId) &&
+    !!item.marketImpact && ["positive", "negative", "neutral"].includes(item.marketImpact.direction) &&
+    typeof item.marketImpact.reason === "string" &&
     typeof item.insufficient === "boolean" && !!item.quiz && typeof item.quiz.question === "string" &&
     Array.isArray(item.quiz.choices) && item.quiz.choices.length === 4 &&
     item.quiz.choices.every((choice) => typeof choice === "string") &&
@@ -71,6 +77,30 @@ export function normalizeUserState(value: unknown): UserState {
     completedQuizIds.length === 0 &&
     safeNonNegative(data.currentDay, 0, true) === 0 &&
     ISSUE_IDS.every((id) => base.holdings[id].quantity === 0);
+  const currentDay = Math.min(MAX_DEMO_DAY, safeNonNegative(data.currentDay, 0, true));
+  const legacyMarket = initialMarketPrices(currentDay);
+  const rawMarket = data.market && typeof data.market === "object" ? data.market as Record<string, unknown> : {};
+  const market = {} as Record<IssueId, MarketPrice>;
+  for (const id of ISSUE_IDS) {
+    const raw = rawMarket[id];
+    if (!raw || typeof raw !== "object") { market[id] = legacyMarket[id]; continue; }
+    const price = raw as Record<string, unknown>;
+    if (!Number.isInteger(price.currentPrice) || (price.currentPrice as number) < 10 ||
+        !Number.isInteger(price.previousPrice) || (price.previousPrice as number) < 10 ||
+        !Array.isArray(price.priceHistory) || !price.priceHistory.length ||
+        !price.priceHistory.every((item) => Number.isInteger(item) && item >= 10) ||
+        price.priceHistory[price.priceHistory.length - 1] !== price.currentPrice) {
+      market[id] = legacyMarket[id];
+      continue;
+    }
+    market[id] = {
+      currentPrice: price.currentPrice as number,
+      previousPrice: price.previousPrice as number,
+      priceHistory: price.priceHistory.slice(-60),
+    };
+  }
+  const savedTickAt = data.nextMarketTickAt;
+  const now = Date.now();
   return {
     coins: legacyFreshBalance ? 100 : safeNonNegative(data.coins, 100, true),
     happyTypingCount: safeNonNegative(data.happyTypingCount, 0, true),
@@ -79,7 +109,12 @@ export function normalizeUserState(value: unknown): UserState {
     quizAttempts,
     seenNewsIds: stringList(data.seenNewsIds).slice(-100),
     cachedAnalyses,
-    currentDay: Math.min(MAX_DEMO_DAY, safeNonNegative(data.currentDay, 0, true)),
+    currentDay,
+    market,
+    nextMarketTickAt: typeof savedTickAt === "number" && Number.isFinite(savedTickAt) &&
+      savedTickAt > 0 && savedTickAt <= now + MARKET_TICK_MS ? savedTickAt : now + MARKET_TICK_MS,
+    marketTickCount: safeNonNegative(data.marketTickCount, 0, true),
+    processedImpactIds: stringList(data.processedImpactIds),
   };
 }
 

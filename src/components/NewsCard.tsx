@@ -2,6 +2,7 @@
 
 import { ArrowRight, ArrowUpRight, BookOpen, Clock3, ExternalLink, FileQuestion, LoaderCircle, Sparkles } from "lucide-react";
 import { formatPublishedAt } from "@/lib/format";
+import { ISSUE_BY_ID } from "@/data/market-issues";
 import { CATEGORY_LABELS, type AnalysisMode, type AnalyzedNews, type NewsArticle } from "@/types";
 
 type Props = {
@@ -24,10 +25,14 @@ export function NewsCard({ article, analysis, analysisMode, analysisLoading, onQ
       <div className="news-source">SOURCE <span>{article.source || "출처 확인"}</span></div>
       <div className="card-rule" />
       <div className="analysis-heading"><span><Sparkles size={17} /> {article.isFallback ? "핵심 3줄 요약" : "AI 핵심 3줄 요약"}</span><small>{analysisMode === "unavailable" ? "ANALYSIS UNAVAILABLE" : analysisMode === "demo" ? "PREWRITTEN DEMO" : "SMART BRIEF"}</small></div>
-      {analysisLoading ? <div className="analysis-loading"><LoaderCircle size={19} className="animate-spin" /><div><strong>원문 본문 확인 중...</strong><span>기사 가치 분석 중... · 퀴즈 계약서 발행 중...</span></div></div> : analysis ? (
+      {analysisLoading ? <div className="analysis-loading"><LoaderCircle size={19} className="animate-spin" /><div><strong>원문 본문 확인 중...</strong><span>기사 가치 분석 중... · 시장 영향도 계산 중... · 퀴즈 계약서 발행 중...</span></div></div> : analysis ? (
         <div className="summary-list">{analysis.summary.filter(Boolean).map((line, index) => <div className="summary-line" key={`${index}-${line}`}><span>0{index + 1}</span><p>{line}</p></div>)}</div>
       ) : <p className="muted">분석 정보를 불러오지 못했습니다.</p>}
       {analysis && <div className="why-box"><span>WHY IT MATTERS</span><p>{analysis.whyItMatters}</p></div>}
+      {analysis && analysisMode !== "unavailable" && <div className={`market-signal ${analysis.marketImpact.direction}`}>
+        <strong>{ISSUE_BY_ID[analysis.issueId].name} · {analysis.marketImpact.direction === "positive" ? "호재" : analysis.marketImpact.direction === "negative" ? "악재" : "중립"}</strong>
+        <span>{analysis.marketImpact.reason}</span>
+      </div>}
       {analysisMode === "unavailable" && <p className="inline-alert">원문 본문을 읽지 못했거나 AI 분석을 사용할 수 없어 퀴즈를 생성하지 못했습니다.</p>}
       {analysis?.insufficient && analysisMode !== "unavailable" && <p className="inline-alert">제공된 정보가 부족해 사실 확인 가능한 퀴즈를 만들 수 없습니다.</p>}
       <div className="news-actions">

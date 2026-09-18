@@ -32,6 +32,7 @@ export type AnalyzedNews = {
   summary: [string, string, string];
   whyItMatters: string;
   issueId: IssueId;
+  marketImpact: { direction: "positive" | "negative" | "neutral"; reason: string };
   quiz: Quiz;
   insufficient: boolean;
 };
@@ -45,8 +46,9 @@ export type MarketIssue = {
   currentPrice: number;
   previousPrice: number;
   priceHistory: number[];
-  dailyChanges: number[];
 };
+
+export type MarketPrice = Pick<MarketIssue, "currentPrice" | "previousPrice" | "priceHistory">;
 
 export type Holding = { quantity: number; averagePrice: number };
 export type UserState = {
@@ -58,4 +60,8 @@ export type UserState = {
   seenNewsIds: string[];
   cachedAnalyses: Record<string, AnalyzedNews>;
   currentDay: number;
+  market: Record<IssueId, MarketPrice>;
+  nextMarketTickAt: number;
+  marketTickCount: number;
+  processedImpactIds: string[];
 };
