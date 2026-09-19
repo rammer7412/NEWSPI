@@ -1,10 +1,11 @@
 import { applyIssueImpact } from "@/lib/market";
-import { ISSUE_IDS, MISSION_IDS, type AnalyzedNews, type DailyMissionState, type IssueId, type LongShortDirection, type LongShortStatus, type MarketDirection, type MarketImpact, type MissionId, type NewsActivity, type NewsArticle, type Prediction, type UserState } from "@/types";
+import { SHOP_BY_ID } from "@/data/shop-items";
+import { ISSUE_IDS, MISSION_IDS, type AnalyzedNews, type DailyMissionState, type IssueId, type LongShortDirection, type LongShortStatus, type MarketDirection, type MarketImpact, type MissionId, type NewsActivity, type NewsArticle, type Prediction, type ShopItemId, type UserState } from "@/types";
 
 export const HACK_EVENT_CHANCE = 0.2;
 export const INITIAL_COINS = 20;
-export const FIRST_TRY_QUIZ_REWARD = 25;
-export const RETRY_QUIZ_REWARD = 10;
+export const FIRST_TRY_QUIZ_REWARD = 100;
+export const RETRY_QUIZ_REWARD = 50;
 export const MISSION_REWARD = 20;
 export const BET_AMOUNTS = [10, 20, 30] as const;
 export const LONG_SHORT_ROUND_MS = 60_000;
@@ -151,6 +152,25 @@ export function applyQuizAward(state: UserState, id: string): UserState {
     newsHistory: state.newsHistory.map((item) => item.articleId === id
       ? { ...item, quizAnswered: true, quizCorrect: true, quizAttempts: attempts + 1, quizReward: reward } : item),
   };
+}
+
+export function purchaseShopItem(state: UserState, id: ShopItemId): UserState {
+  const item = SHOP_BY_ID[id];
+  if (!item || state.ownedShopItems.includes(id) || state.coins < item.price) return state;
+  return {
+    ...state,
+    coins: Math.round((state.coins - item.price) * 100) / 100,
+    ownedShopItems: [...state.ownedShopItems, id],
+  };
+}
+
+export function equipShopItem(state: UserState, id: ShopItemId): UserState {
+  const item = SHOP_BY_ID[id];
+  if (!item || !state.ownedShopItems.includes(id)) return state;
+  if ((item.kind === "TITLE" ? state.equippedTitle : state.equippedTheme) === id) return state;
+  return item.kind === "TITLE"
+    ? { ...state, equippedTitle: id }
+    : { ...state, equippedTheme: id };
 }
 
 export function applyArticleImpactOnce(state: UserState, articleId: string, impact: MarketImpact): UserState {

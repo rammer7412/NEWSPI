@@ -120,19 +120,19 @@ test("초기 가격은 폭넓고 1분 변동은 ±3%, 기사 영향은 최대 ±
 test("퀴즈 보상과 미션 보상은 중복 지급되지 않고 오답은 연승을 초기화한다", () => {
   let state = game.recordArticleView(storage.initialUserState(), article("q1"));
   state = game.applyQuizAward(state, "q1");
-  assert.equal(state.coins, 45);
+  assert.equal(state.coins, 120);
   assert.strictEqual(game.applyQuizAward(state, "q1"), state);
   state = game.recordArticleView(state, article("q2"));
   state = game.applyWrongQuizAnswer(state, "q2");
   assert.equal(state.dailyMission.quizStreak, 0);
   state = game.applyQuizAward(state, "q2");
-  assert.equal(state.coins, 55);
-  assert.equal(state.newsHistory.find((item) => item.articleId === "q2").quizReward, 10);
+  assert.equal(state.coins, 170);
+  assert.equal(state.newsHistory.find((item) => item.articleId === "q2").quizReward, 50);
   state = game.recordArticleView(state, article("q3"));
   state = game.recordArticleView(state, article("q3"));
   assert.equal(state.dailyMission.readArticleIds.length, 3);
   state = game.claimMissionReward(state, "explorer");
-  assert.equal(state.coins, 75);
+  assert.equal(state.coins, 190);
   assert.strictEqual(game.claimMissionReward(state, "explorer"), state);
   const beforeAll = state.coins;
   assert.strictEqual(game.claimAllMissionReward(state), state);
@@ -195,6 +195,23 @@ test("롱·숏 결과는 상승·하락·무승부를 구분하고 승리 지급
   assert.deepEqual(game.settleLongShortBet("SHORT", 10, 100, 101), { status: "LOST", payout: 0 });
   assert.deepEqual(game.settleLongShortBet("LONG", 25, 100, 100), { status: "DRAW", payout: 25 });
   assert.deepEqual(game.settleLongShortBet("SHORT", 25, 100, 100), { status: "DRAW", payout: 25 });
+});
+
+test("상점 구매는 코인을 한 번만 차감하고 보유 상품만 장착한다", () => {
+  const base = { ...storage.initialUserState(), coins: 2000 };
+  const purchased = game.purchaseShopItem(base, "TITLE_NEWS_SCOUT");
+  assert.equal(purchased.coins, 1700);
+  assert.deepEqual(purchased.ownedShopItems, ["TITLE_NEWS_SCOUT"]);
+  assert.strictEqual(game.purchaseShopItem(purchased, "TITLE_NEWS_SCOUT"), purchased);
+  const equipped = game.equipShopItem(purchased, "TITLE_NEWS_SCOUT");
+  assert.equal(equipped.equippedTitle, "TITLE_NEWS_SCOUT");
+  assert.strictEqual(game.equipShopItem(equipped, "TITLE_NEWS_SCOUT"), equipped);
+  assert.strictEqual(game.equipShopItem(base, "TITLE_NEWS_SCOUT"), base);
+  const themed = game.equipShopItem(game.purchaseShopItem(equipped, "THEME_VIOLET"), "THEME_VIOLET");
+  assert.equal(themed.coins, 1100);
+  assert.equal(themed.equippedTheme, "THEME_VIOLET");
+  const poor = storage.initialUserState();
+  assert.strictEqual(game.purchaseShopItem(poor, "TITLE_NEWS_SCOUT"), poor);
 });
 
 test("손상된 이전 데이터는 거부하며 브라우저 값을 유지한다", () => {

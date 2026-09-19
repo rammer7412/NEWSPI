@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { clearLegacyState, readLegacyState } from "@/lib/db/legacy-migration";
 import { initialUserState } from "@/lib/storage";
-import type { AnalyzedNews, HackEventState, IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
+import type { AnalyzedNews, HackEventState, IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketDirection, MarketImpact, MissionId, NewsArticle, ShopItemId, UserState } from "@/types";
 
 type GameResponse = {
   ok: boolean;
@@ -261,6 +261,18 @@ export function useDbUserState() {
     return result.ok && !!result.applied;
   }, [run]);
 
+  const purchaseItem = useCallback(async (id: ShopItemId): Promise<TradeResult> => {
+    const result = await run("shop_purchase", { itemId: id });
+    return { ok: result.ok && !!result.applied,
+      message: result.message || (result.ok ? "구매했습니다. 보관함에서 장착할 수 있어요." : "상품을 구매하지 못했습니다.") };
+  }, [run]);
+
+  const equipItem = useCallback(async (id: ShopItemId): Promise<TradeResult> => {
+    const result = await run("shop_equip", { itemId: id });
+    return { ok: result.ok && !!result.applied,
+      message: result.message || (result.ok ? "새 아이템을 장착했습니다." : "아이템을 장착하지 못했습니다.") };
+  }, [run]);
+
   const reset = useCallback(async () => {
     const result = await run("reset");
     if (!result.ok) throw new Error(result.message);
@@ -270,5 +282,5 @@ export function useDbUserState() {
   return { state, hydrated, loadingError, actionError, busy, retryLoad: () => setRetry((value) => value + 1),
     secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins, refundRouletteCoins,
     earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack, claimMission,
-    claimAllMissions, reset, longShort, openLongShort, settleLongShort };
+    claimAllMissions, purchaseItem, equipItem, reset, longShort, openLongShort, settleLongShort };
 }

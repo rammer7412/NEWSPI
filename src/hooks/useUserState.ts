@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { advanceMarketTicks } from "@/lib/market";
 import { initialUserState, loadUserState, saveUserState } from "@/lib/storage";
-import { applyArticleImpactOnce, applyHappyReward, applyQuizAward, applyWrongQuizAnswer, claimAllMissionReward, claimMissionReward, finalizeHackOnce, recordArticleView, registerAnalyzedArticle, rolloverDailyState } from "@/lib/game";
+import { applyArticleImpactOnce, applyHappyReward, applyQuizAward, applyWrongQuizAnswer, claimAllMissionReward, claimMissionReward, equipShopItem, finalizeHackOnce, purchaseShopItem, recordArticleView, registerAnalyzedArticle, rolloverDailyState } from "@/lib/game";
 import { HAPPY_PHRASES, normalizeHappyPhrase } from "@/data/happy-phrases";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { useDbUserState } from "@/hooks/useDbUserState";
-import type { AnalyzedNews, IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
+import type { AnalyzedNews, IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketDirection, MarketImpact, MissionId, NewsArticle, ShopItemId, UserState } from "@/types";
 
 type TradeResult = { ok: boolean; message: string };
 export const ROULETTE_COST = 5;
@@ -201,12 +201,28 @@ export function useLocalUserState() {
     return stateRef.current.coins > before;
   }, [commit]);
 
+  const purchaseItem = useCallback((id: ShopItemId): TradeResult => {
+    const previous = stateRef.current;
+    commit((state) => purchaseShopItem(state, id));
+    return stateRef.current !== previous
+      ? { ok: true, message: "구매했습니다. 보관함에서 장착할 수 있어요." }
+      : { ok: false, message: previous.ownedShopItems.includes(id) ? "이미 보유한 상품입니다." : "보유 코인이 부족합니다." };
+  }, [commit]);
+
+  const equipItem = useCallback((id: ShopItemId): TradeResult => {
+    const previous = stateRef.current;
+    commit((state) => equipShopItem(state, id));
+    return stateRef.current !== previous
+      ? { ok: true, message: "새 아이템을 장착했습니다." }
+      : { ok: false, message: "먼저 상품을 구매해 주세요." };
+  }, [commit]);
+
   const reset = useCallback(() => commit(() => initialUserState()), [commit]);
 
   return { state, hydrated, loadingError: null, actionError: null, busy: false, retryLoad: () => {},
     secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins,
     refundRouletteCoins, earnHappyCoin, recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack,
-    claimMission, claimAllMissions, reset, longShort, openLongShort, settleLongShort };
+    claimMission, claimAllMissions, purchaseItem, equipItem, reset, longShort, openLongShort, settleLongShort };
 }
 
 // The mode is fixed at build time. A configured deployment never persists game

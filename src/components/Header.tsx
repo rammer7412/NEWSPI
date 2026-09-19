@@ -4,7 +4,7 @@ import { Coins, RotateCcw, Sparkles } from "lucide-react";
 import { NewspiMark } from "@/components/NewspiMark";
 import { formatCoin, formatCountdown } from "@/lib/format";
 
-export type Tab = "home" | "market" | "portfolio" | "history" | "missions" | "happy";
+export type Tab = "home" | "market" | "portfolio" | "history" | "missions" | "shop" | "happy";
 
 type Props = {
   tab: Tab;
@@ -12,16 +12,18 @@ type Props = {
   coins: number;
   totalAssets: number;
   secondsToNextTick: number;
+  playerTitle: string;
   onReset: () => void;
 };
 
-export function Header({ tab, onTabChange, coins, totalAssets, secondsToNextTick, onReset }: Props) {
+export function Header({ tab, onTabChange, coins, totalAssets, secondsToNextTick, playerTitle, onReset }: Props) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "home", label: "뉴스 룰렛" },
     { id: "market", label: "이슈 거래소" },
     { id: "portfolio", label: "내 포트폴리오" },
     { id: "history", label: "뉴스 기록" },
     { id: "missions", label: "오늘의 미션" },
+    { id: "shop", label: "코인 상점" },
     { id: "happy", label: "행복한 뒤주" },
   ];
   return (
@@ -36,7 +38,7 @@ export function Header({ tab, onTabChange, coins, totalAssets, secondsToNextTick
         </nav>
         <div className="header-wallet">
           <div className="wallet-icon"><Coins size={18} /></div>
-          <div><span className="eyebrow">MY COINS</span><strong>{formatCoin(coins)}</strong></div>
+          <div><span className="eyebrow">{playerTitle}</span><strong>{formatCoin(coins)}</strong></div>
         </div>
       </div>
       <div className="header-sub">

@@ -13,7 +13,9 @@ import { NewspiMark } from "@/components/NewspiMark";
 import { NewsHistory } from "@/components/NewsHistory";
 import { Portfolio } from "@/components/Portfolio";
 import { QuizPanel } from "@/components/QuizPanel";
+import { Shop } from "@/components/Shop";
 import { ISSUE_BY_ID } from "@/data/market-issues";
+import { equippedTitleLabel, shopThemeClass } from "@/data/shop-items";
 import { ROULETTE_COST, useUserState } from "@/hooks/useUserState";
 import { formatCoin, formatPercent } from "@/lib/format";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -39,7 +41,7 @@ function unavailableFor(article: NewsArticle): AnalyzedNews {
 export default function Home() {
   const { state, hydrated, loadingError, actionError, busy, retryLoad, secondsToNextTick, recordNewsView, registerAnalysis, cacheAnalysis, spendRouletteCoins, refundRouletteCoins, earnHappyCoin,
     recordWrongAttempt, awardQuiz, buy, sell, applyNewsImpact, resolveHack, claimMission, claimAllMissions,
-    reset, longShort, openLongShort, settleLongShort } = useUserState();
+    purchaseItem, equipItem, reset, longShort, openLongShort, settleLongShort } = useUserState();
   const [tab, setTab] = useState<Tab>("home");
   const [selectedIssue, setSelectedIssue] = useState<IssueId>("AI_TECH");
   const [rotation, setRotation] = useState(0);
@@ -177,7 +179,7 @@ export default function Home() {
   }
 
   async function handleReset() {
-    if (window.confirm("코인, 보유 이슈, 뉴스 기록, 해킹 이벤트와 오늘의 미션을 모두 초기화할까요?")) {
+    if (window.confirm("코인, 보유 이슈, 뉴스 기록, 해킹 이벤트, 오늘의 미션과 상점 구매 내역을 모두 초기화할까요?")) {
       spinRequest.current += 1;
       spinLock.current = false;
       try { await reset(); }
@@ -196,8 +198,8 @@ export default function Home() {
 
   if (!hydrated) return <div className="site-wrap"><main className="app-shell"><section className="placeholder-card glass-panel loading-card" role="status"><LoaderCircle size={36} className="animate-spin" /><h2>{loadingError ? "게임 데이터를 불러오지 못했어요" : "NEWSPI 입장 준비 중..."}</h2><p>{loadingError || "익명 세션과 게임 기록을 확인하고 있습니다."}</p>{loadingError && <button className="primary-button" onClick={retryLoad}>다시 시도</button>}</section></main></div>;
 
-  return <div className="site-wrap">
-    <Header tab={tab} onTabChange={setTab} coins={state.coins} totalAssets={totals.totalAssets} secondsToNextTick={secondsToNextTick} onReset={handleReset} />
+  return <div className={`site-wrap ${shopThemeClass(state.equippedTheme)}`}>
+    <Header tab={tab} onTabChange={setTab} coins={state.coins} totalAssets={totals.totalAssets} secondsToNextTick={secondsToNextTick} playerTitle={equippedTitleLabel(state.equippedTitle)} onReset={handleReset} />
     <main className="app-shell">
       {actionError && <div className="status-banner" role="alert"><ShieldCheck size={16} /><span>{actionError}</span></div>}
       {!isSupabaseConfigured && <div className="status-banner" role="status"><ShieldCheck size={16} /><span>Supabase가 설정되지 않아 Local Demo Mode로 실행 중입니다.</span></div>}
@@ -219,6 +221,7 @@ export default function Home() {
       {tab === "portfolio" && <Portfolio state={state} market={market} onMarket={() => goToMarket()} />}
       {tab === "history" && <NewsHistory state={state} />}
       {tab === "missions" && <DailyMissions state={state} onClaim={claimMission} onClaimAll={claimAllMissions} busy={busy} />}
+      {tab === "shop" && <Shop state={state} busy={busy} onPurchase={purchaseItem} onEquip={equipItem} />}
       {tab === "happy" && <HappyDwi coins={state.coins} completedCount={state.happyTypingCount} dailyEarned={state.happyDailyEarned} spinCost={ROULETTE_COST} onEarn={earnHappyCoin} onGoHome={() => setTab("home")} busy={busy} />}
     </main>
     <footer className="site-footer"><span><BarChart3 size={16} /> NEWSPI <b>.</b></span><p>읽으면 벌고, 알면 오른다.</p><small>모든 코인과 이슈 가격은 가상이며 실제 투자와 무관합니다.</small></footer>

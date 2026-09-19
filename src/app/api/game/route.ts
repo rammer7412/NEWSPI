@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   }
   const allowed = ["migrate", "mark_migrated", "reset", "spend_roulette", "refund_roulette", "record_view",
     "register_analysis", "wrong_quiz", "award_quiz", "happy", "buy", "sell", "tick", "apply_impact",
-    "resolve_hack", "claim_mission", "claim_all"];
+    "resolve_hack", "claim_mission", "claim_all", "shop_purchase", "shop_equip"];
   if (!body || typeof body !== "object" || typeof body.action !== "string" || !allowed.includes(body.action) ||
     !body.payload || typeof body.payload !== "object" || Array.isArray(body.payload)) {
     return NextResponse.json({ message: "올바른 게임 요청이 필요합니다." }, { status: 400, headers: noStore });

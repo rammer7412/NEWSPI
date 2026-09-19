@@ -102,6 +102,12 @@ export type LongShortBet = {
   settledAt: number | null;
 };
 export type LongShortSnapshot = { active: LongShortBet | null; recent: LongShortBet[]; settledBet?: LongShortBet | null; serverNow?: number; receivedAt?: number };
+export const SHOP_ITEM_IDS = [
+  "TITLE_NEWS_SCOUT", "TITLE_ISSUE_HUNTER", "TITLE_MARKET_ORACLE",
+  "THEME_VIOLET", "THEME_GOLD", "THEME_AURORA",
+] as const;
+export type ShopItemId = (typeof SHOP_ITEM_IDS)[number];
+export type ShopItemKind = "TITLE" | "THEME";
 export const MISSION_IDS = ["explorer", "streak", "hacker"] as const;
 export type MissionId = (typeof MISSION_IDS)[number];
 export type DailyMissionState = {
@@ -135,4 +141,7 @@ export type UserState = {
   dailyMission: DailyMissionState;
   quizCurrentStreak: number;
   totalNewsCoinsEarned: number;
+  ownedShopItems: ShopItemId[];
+  equippedTitle: ShopItemId | null;
+  equippedTheme: ShopItemId | null;
 };

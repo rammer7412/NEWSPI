@@ -1,6 +1,7 @@
-import { ISSUE_IDS, MISSION_IDS, NEWS_CATEGORIES, type AnalyzedNews, type DailyMissionState, type HackEventState, type Holding, type IssueId, type MarketPrice, type NewsActivity, type Prediction, type UserState } from "@/types";
+import { ISSUE_IDS, MISSION_IDS, NEWS_CATEGORIES, SHOP_ITEM_IDS, type AnalyzedNews, type DailyMissionState, type HackEventState, type Holding, type IssueId, type MarketPrice, type NewsActivity, type Prediction, type ShopItemId, type UserState } from "@/types";
 import { clampMagnitude, initialMarketPrices, MARKET_TICK_MS, MAX_DEMO_DAY } from "@/lib/market";
 import { INITIAL_COINS, initialDailyMission, localDateKey, rolloverDailyState } from "@/lib/game";
+import { SHOP_BY_ID } from "@/data/shop-items";
 
 const STORAGE_KEY = "newspi:user:v1";
 
@@ -31,6 +32,9 @@ export function initialUserState(): UserState {
     dailyMission: initialDailyMission(),
     quizCurrentStreak: 0,
     totalNewsCoinsEarned: 0,
+    ownedShopItems: [],
+    equippedTitle: null,
+    equippedTheme: null,
   };
 }
 
@@ -204,6 +208,12 @@ export function normalizeUserState(value: unknown, rollover = true): UserState {
   }
   const happyDailyDate = typeof data.happyDailyDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(data.happyDailyDate)
     ? data.happyDailyDate : localDateKey();
+  const ownedShopItems = stringList(data.ownedShopItems)
+    .filter((id): id is ShopItemId => SHOP_ITEM_IDS.includes(id as ShopItemId));
+  const equippedTitle = typeof data.equippedTitle === "string" && ownedShopItems.includes(data.equippedTitle as ShopItemId) &&
+    SHOP_BY_ID[data.equippedTitle as ShopItemId]?.kind === "TITLE" ? data.equippedTitle as ShopItemId : null;
+  const equippedTheme = typeof data.equippedTheme === "string" && ownedShopItems.includes(data.equippedTheme as ShopItemId) &&
+    SHOP_BY_ID[data.equippedTheme as ShopItemId]?.kind === "THEME" ? data.equippedTheme as ShopItemId : null;
   const normalized: UserState = {
     version: 2,
     coins: legacyFreshBalance ? INITIAL_COINS : Math.round(safeNonNegative(data.coins, INITIAL_COINS) * 100) / 100,
@@ -228,6 +238,9 @@ export function normalizeUserState(value: unknown, rollover = true): UserState {
     quizCurrentStreak: safeNonNegative(data.quizCurrentStreak, 0, true),
     totalNewsCoinsEarned: typeof data.totalNewsCoinsEarned === "number" && Number.isFinite(data.totalNewsCoinsEarned)
       ? Math.trunc(data.totalNewsCoinsEarned) : legacyNewsEarnings,
+    ownedShopItems,
+    equippedTitle,
+    equippedTheme,
   };
   return rollover ? rolloverDailyState(normalized, now) : normalized;
 }
