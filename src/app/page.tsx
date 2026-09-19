@@ -94,10 +94,12 @@ export default function Home() {
     const category = NEWS_CATEGORIES[Math.floor(Math.random() * NEWS_CATEGORIES.length)];
     const index = NEWS_CATEGORIES.indexOf(category);
     const sector = 360 / NEWS_CATEGORIES.length;
-    const currentMod = ((rotation % 360) + 360) % 360;
-    const targetMod = ((-(index + 0.5) * sector % 360) + 360) % 360;
-    const delta = (targetMod - currentMod + 360) % 360;
-    setRotation(rotation + 360 * 4 + delta);
+    setRotation((previous) => {
+      const currentMod = ((previous % 360) + 360) % 360;
+      const targetMod = ((-(index + 0.5) * sector % 360) + 360) % 360;
+      const clockwiseDelta = (targetMod - currentMod + 360) % 360;
+      return previous + 360 * 4 + clockwiseDelta;
+    });
     setSpinning(true);
     setSelectedCategory(null);
     setArticle(null);
