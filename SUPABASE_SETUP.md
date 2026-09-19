@@ -16,7 +16,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 5. Supabase SQL Editor에서 [`supabase/migrations/20260918000000_newspi_game_state.sql`](supabase/migrations/20260918000000_newspi_game_state.sql)을 실행합니다. Supabase CLI가 프로젝트에 연결되어 있다면 `supabase db push`로 적용할 수도 있습니다. 기존 원격 데이터를 초기화하거나 삭제하는 명령은 사용하지 마세요.
 6. 이어서 [`supabase/migrations/20260919000000_newspi_long_short.sql`](supabase/migrations/20260919000000_newspi_long_short.sql)을 SQL Editor에서 실행합니다. CLI가 연결돼 있다면 두 파일을 순서대로 `supabase db push`로 적용할 수 있습니다.
-7. `npm install`로 Supabase SSR 패키지를 설치하고 lockfile을 갱신한 뒤 개발 서버를 다시 시작합니다.
+7. 이어서 [`supabase/migrations/20260920000000_newspi_roulette_cost.sql`](supabase/migrations/20260920000000_newspi_roulette_cost.sql)과 [`supabase/migrations/20260920010000_newspi_economy_tuning.sql`](supabase/migrations/20260920010000_newspi_economy_tuning.sql)을 순서대로 실행합니다. 마지막 파일이 현재의 20 C 초기 잔액, 5 C 룰렛 비용, 시작 가격과 변동폭을 적용합니다.
+8. `npm install`로 Supabase SSR 패키지를 설치하고 lockfile을 갱신한 뒤 개발 서버를 다시 시작합니다.
 
 마이그레이션은 `market_assets`의 7개 이슈와 뒤주 문장 데이터를 추가하고 사용자 테이블, RLS, 원자적 게임 액션 RPC를 만듭니다. 기존 프로젝트가 연결돼 있지 않다면 파일만 준비된 상태입니다.
 
@@ -51,12 +52,12 @@ where schemaname = 'public'
 
 ## 4. 브라우저 수동 확인
 
-1. 새 브라우저 프로필에서 접속해 100 C와 7개 초기 가격을 확인합니다.
-2. 룰렛을 한 번 돌려 20 C 차감과 뉴스 기록 저장을 확인합니다.
+1. 새 브라우저 프로필에서 접속해 20 C와 12~1,480 C로 분산된 7개 초기 가격을 확인합니다.
+2. 룰렛을 한 번 돌려 5 C 차감과 뉴스 기록 저장을 확인합니다.
 3. 퀴즈 보상, 매수·매도, 포트폴리오를 확인하고 새로고침합니다. 같은 익명 사용자와 값이 유지되어야 합니다.
 4. 같은 퀴즈·해킹 이벤트·미션 보상 버튼을 다시 눌러 중복 지급이 없는지 확인합니다.
-5. 두 탭을 열고 1분 가격 변동을 확인합니다. 새로고침이나 탭 복귀 시 DB의 최신 가격을 받아야 합니다.
+5. 두 탭을 열고 1분마다 최대 ±3%인 가격 변동을 확인합니다. 새로고침이나 탭 복귀 시 DB의 최신 가격을 받아야 합니다.
 6. 코인이 10 C 미만일 때 뒤주 사용량과 다음 날 초기화를 확인합니다.
-7. 데이터 초기화 후 현재 익명 사용자의 상태만 100 C로 돌아가는지 확인합니다. 다른 브라우저 프로필의 데이터는 유지되어야 합니다.
+7. 데이터 초기화 후 현재 익명 사용자의 상태만 20 C와 새 시작 가격으로 돌아가는지 확인합니다. 다른 브라우저 프로필의 데이터는 유지되어야 합니다.
 
 익명 인증은 별도 로그인 화면이 없지만 쿠키와 브라우저 데이터를 모두 지우거나 다른 기기를 쓰면 기존 익명 계정에 다시 접근할 수 없습니다. 이 MVP에는 계정 연결이나 복구 기능이 없습니다.

@@ -3,6 +3,7 @@ import type { IssueId, MarketDirection, MarketIssue, MarketPrice, UserState } fr
 
 export const MAX_DEMO_DAY = 365;
 export const MARKET_TICK_MS = 60_000;
+export const MARKET_TICK_MAX_RATE = 0.03;
 const MAX_CATCH_UP_TICKS = 60;
 const MAX_PRICE_HISTORY = 60;
 
@@ -52,7 +53,7 @@ export function advanceMarketTicks(state: UserState, now: number, random = Math.
   for (let tick = 0; tick < due; tick += 1) {
     market = Object.fromEntries(ISSUE_DEFINITIONS.map((issue) => {
       const sample = Math.min(1, Math.max(0, random()));
-      const rate = (sample - 0.5) * 0.01;
+      const rate = (sample * 2 - 1) * MARKET_TICK_MAX_RATE;
       return [issue.id, movePrice(market[issue.id], rate)];
     })) as Record<IssueId, MarketPrice>;
   }

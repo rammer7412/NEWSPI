@@ -2,7 +2,7 @@ import { applyIssueImpact } from "@/lib/market";
 import { ISSUE_IDS, MISSION_IDS, type AnalyzedNews, type DailyMissionState, type IssueId, type LongShortDirection, type LongShortStatus, type MarketDirection, type MarketImpact, type MissionId, type NewsActivity, type NewsArticle, type Prediction, type UserState } from "@/types";
 
 export const HACK_EVENT_CHANCE = 0.2;
-export const INITIAL_COINS = 50;
+export const INITIAL_COINS = 20;
 export const FIRST_TRY_QUIZ_REWARD = 25;
 export const RETRY_QUIZ_REWARD = 10;
 export const MISSION_REWARD = 20;

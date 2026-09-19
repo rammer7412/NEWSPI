@@ -59,19 +59,19 @@ test("베팅은 완전 일치, 방향 일치, 불일치에 맞게 정산하고 �
   const impact = demo.analysis.marketImpact;
   const base = game.recordArticleView(storage.initialUserState(), article("hack"));
   const pending = { ...base, hackEvents: { hack: { active: true, resolved: false, pendingAnalysis: demo.analysis } } };
-  const exact = game.finalizeHackOnce(pending, "hack", impact, impact.relatedIssue, impact.direction, 30);
-  assert.equal(exact.coins, 80);
-  assert.equal(exact.hackEvents.hack.prediction.profit, 30);
+  const exact = game.finalizeHackOnce(pending, "hack", impact, impact.relatedIssue, impact.direction, 10);
+  assert.equal(exact.coins, 30);
+  assert.equal(exact.hackEvents.hack.prediction.profit, 10);
   assert.equal(exact.dailyMission.predictedArticleIds.length, 1);
   assert.equal(exact.processedImpactIds.length, 1);
   assert.equal(exact.newsHistory[0].summary.length, 3);
   assert.notEqual(exact.market[impact.relatedIssue].currentPrice, pending.market[impact.relatedIssue].currentPrice);
-  assert.strictEqual(game.finalizeHackOnce(exact, "hack", impact, impact.relatedIssue, impact.direction, 30), exact);
-  const directionOnly = game.finalizeHackOnce(pending, "hack", impact, "SPORTS", impact.direction, 20);
-  assert.equal(directionOnly.coins, 50);
+  assert.strictEqual(game.finalizeHackOnce(exact, "hack", impact, impact.relatedIssue, impact.direction, 10), exact);
+  const directionOnly = game.finalizeHackOnce(pending, "hack", impact, "SPORTS", impact.direction, 10);
+  assert.equal(directionOnly.coins, 20);
   assert.equal(directionOnly.hackEvents.hack.prediction.result, "DIRECTION_ONLY");
-  const miss = game.finalizeHackOnce(pending, "hack", impact, impact.relatedIssue, "DOWN", 30);
-  assert.equal(miss.coins, 20);
+  const miss = game.finalizeHackOnce(pending, "hack", impact, impact.relatedIssue, "DOWN", 10);
+  assert.equal(miss.coins, 10);
   assert.equal(miss.hackEvents.hack.prediction.result, "MISS");
   const poor = { ...pending, coins: 5 };
   const restored = game.finalizeHackOnce(poor, "hack", impact);
@@ -92,14 +92,18 @@ test("해킹 기사는 정산 전 기록에 분석을 공개하지 않는다", (
   assert.equal(resolved.newsHistory[0].summary.length, 3);
 });
 
-test("1분 변동은 ±0.5%, 기사 영향은 최대 ±5%이고 한 기사에 한 번만 적용된다", () => {
+test("초기 가격은 폭넓고 1분 변동은 ±3%, 기사 영향은 최대 ±5%다", () => {
   const base = storage.initialUserState();
+  assert.equal(base.coins, 20);
+  const initialPrices = Object.values(base.market).map((item) => item.currentPrice);
+  assert.equal(Math.min(...initialPrices), 12);
+  assert.equal(Math.max(...initialPrices), 1480);
   const tickBase = { ...base, nextMarketTickAt: 60_000 };
   for (const sample of [0, 1]) {
     const ticked = market.advanceMarketTicks(tickBase, 60_000, () => sample);
     for (const id of Object.keys(base.market)) {
       const rate = (ticked.market[id].currentPrice - base.market[id].currentPrice) / base.market[id].currentPrice;
-      assert.ok(Math.abs(rate) <= 0.005000001);
+      assert.ok(Math.abs(rate) <= 0.030000001);
     }
   }
   assert.equal(market.clampMagnitude(100), 5);
@@ -116,19 +120,19 @@ test("1분 변동은 ±0.5%, 기사 영향은 최대 ±5%이고 한 기사에 �
 test("퀴즈 보상과 미션 보상은 중복 지급되지 않고 오답은 연승을 초기화한다", () => {
   let state = game.recordArticleView(storage.initialUserState(), article("q1"));
   state = game.applyQuizAward(state, "q1");
-  assert.equal(state.coins, 75);
+  assert.equal(state.coins, 45);
   assert.strictEqual(game.applyQuizAward(state, "q1"), state);
   state = game.recordArticleView(state, article("q2"));
   state = game.applyWrongQuizAnswer(state, "q2");
   assert.equal(state.dailyMission.quizStreak, 0);
   state = game.applyQuizAward(state, "q2");
-  assert.equal(state.coins, 85);
+  assert.equal(state.coins, 55);
   assert.equal(state.newsHistory.find((item) => item.articleId === "q2").quizReward, 10);
   state = game.recordArticleView(state, article("q3"));
   state = game.recordArticleView(state, article("q3"));
   assert.equal(state.dailyMission.readArticleIds.length, 3);
   state = game.claimMissionReward(state, "explorer");
-  assert.equal(state.coins, 105);
+  assert.equal(state.coins, 75);
   assert.strictEqual(game.claimMissionReward(state, "explorer"), state);
   const beforeAll = state.coins;
   assert.strictEqual(game.claimAllMissionReward(state), state);

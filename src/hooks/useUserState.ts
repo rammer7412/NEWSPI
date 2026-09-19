@@ -10,7 +10,7 @@ import { useDbUserState } from "@/hooks/useDbUserState";
 import type { AnalyzedNews, IssueId, LongShortBet, LongShortDirection, LongShortSnapshot, MarketDirection, MarketImpact, MissionId, NewsArticle, UserState } from "@/types";
 
 type TradeResult = { ok: boolean; message: string };
-export const ROULETTE_COST = 20;
+export const ROULETTE_COST = 5;
 
 export function useLocalUserState() {
   const [state, setState] = useState<UserState>(initialUserState);
